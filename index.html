@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>バンディット×ベイズ戦略 (Bandit x Bayes Strategy)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="main-header">
+            <div class="header-content">
+                <h1>バンディット×ベイズ戦略</h1>
+                <div class="header-actions">
+                    <button class="icon-btn" title="Export"><i class="fa-solid fa-download"></i></button>
+                    <button class="icon-btn" title="Import"><i class="fa-solid fa-upload"></i></button>
+                    <button class="icon-btn" title="Reset"><i class="fa-solid fa-rotate-right"></i></button>
+                </div>
+            </div>
+            <button class="nav-item active" data-tab="map"><i class="fa-solid fa-border-all"></i> 戦略マップ</button>
+            <button class="nav-item" data-tab="verification"><i class="fa-solid fa-flask"></i> 仮説検証</button>
+            <button class="nav-item" data-tab="confidence"><i class="fa-solid fa-chart-line"></i> 自信度分析</button>
+            </nav>
+        </header>
+
+        <main class="main-content">
+
+            <!-- Map View -->
+            <div id="map-view" class="view-content active">
+                <!-- Input Section -->
+                <section class="input-section">
+                    <div class="card input-card">
+                        <div class="form-group">
+                            <input type="text" id="task-title" placeholder="タイトル (例: 新機能LP作成)"
+                                class="text-input big-input">
+                        </div>
+
+                        <div class="scales-container">
+                            <div class="scale-group">
+                                <label>効果</label>
+                                <div class="scale-options" id="impact-scale">
+                                    <label class="radio-label"><input type="radio" name="impact"
+                                            value="1"><span>1</span></label>
+                                    <label class="radio-label"><input type="radio" name="impact"
+                                            value="2"><span>2</span></label>
+                                    <label class="radio-label"><input type="radio" name="impact" value="3"
+                                            checked><span>3</span></label>
+                                    <label class="radio-label"><input type="radio" name="impact"
+                                            value="4"><span>4</span></label>
+                                    <label class="radio-label"><input type="radio" name="impact"
+                                            value="5"><span>5</span></label>
+                                </div>
+                            </div>
+
+                            <div class="scale-group">
+                                <label>工数</label>
+                                <div class="scale-options" id="cost-scale">
+                                    <label class="radio-label"><input type="radio" name="cost"
+                                            value="1"><span>1</span></label>
+                                    <label class="radio-label"><input type="radio" name="cost"
+                                            value="2"><span>2</span></label>
+                                    <label class="radio-label"><input type="radio" name="cost" value="3"
+                                            checked><span>3</span></label>
+                                    <label class="radio-label"><input type="radio" name="cost"
+                                            value="4"><span>4</span></label>
+                                    <label class="radio-label"><input type="radio" name="cost"
+                                            value="5"><span>5</span></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <textarea id="task-memo" placeholder="メモ (任意)" class="text-input memo-input"></textarea>
+                        </div>
+
+                        <button id="save-btn" class="primary-btn">保存する</button>
+                    </div>
+                </section>
+
+                <div class="matrix-container">
+                    <div class="quadrant q-nw">
+                        <span class="q-label">高効果 / 低工数 (即実行)</span>
+                    </div>
+                    <div class="quadrant q-ne">
+                        <span class="q-label">高効果 / 高工数 (計画的)</span>
+                    </div>
+                    <div class="quadrant q-sw">
+                        <span class="q-label">低効果 / 低工数 (後回し)</span>
+                    </div>
+                    <div class="quadrant q-se">
+                        <span class="q-label">低効果 / 高工数 (除外候補)</span>
+                    </div>
+
+                    <!-- Axis Labels -->
+                    <div class="axis-label x-axis">工数 (低 → 高)</div>
+                    <div class="axis-label y-axis">効果 (低 → 高)</div>
+
+                    <!-- Grid Lines -->
+                    <div class="grid-line horizontal"></div>
+                    <div class="grid-line vertical"></div>
+
+                    <!-- Items Container -->
+                    <div id="matrix-items" class="matrix-items-layer">
+                        <!-- Items will be injected here -->
+                    </div>
+                </div>
+
+                <div class="list-section mt-8">
+                    <h3><i class="fa-solid fa-list-check"></i> 優先度順リスト</h3>
+                    <div id="active-list" class="task-list">
+                        <!-- Active Tasks -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verification View -->
+            <div id="verification-view" class="view-content hidden">
+                <!-- Sticky Resource Gauge -->
+                <div class="sticky-resource-gauge">
+                    <div class="gauge-header">
+                        <span class="gauge-label">Total Resource Allocation</span>
+                        <span class="gauge-value" id="total-resource-val">0%</span>
+                    </div>
+                    <div class="gauge-track">
+                        <div class="gauge-fill" id="total-resource-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Input -->
+                <div class="card verification-input-card">
+                    <div class="step-badge">Step 1</div>
+                    <h2 class="section-title">新しいアーム(解決策)を追加する</h2>
+
+                    <div class="form-group mt-4">
+                        <label class="input-label">取り組む課題 (Problem / Theme)</label>
+                        <input type="text" id="hypo-problem" list="problem-list" placeholder="例：LPのCVRが低い"
+                            class="text-input">
+                        <datalist id="problem-list">
+                            <!-- Dynamic options -->
+                        </datalist>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">具体的なアイデア (Arm)</label>
+                        <input type="text" id="hypo-idea" placeholder="例：FVを動画にする" class="text-input">
+                    </div>
+
+                    <div class="info-box">
+                        <h4 class="info-title"><i class="fa-solid fa-circle-info"></i> 検証可能な仮説</h4>
+                        <ul class="info-list">
+                            <li>「もし○○すれば（行動）」</li>
+                            <li>「いつまでに・どれくらい（期間・数値）」</li>
+                            <li>「～だろう（結果）」</li>
+                        </ul>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">検証仮説</label>
+                        <textarea id="hypo-text" placeholder="例）もしFVを動画にすれば、直帰率が10%改善するだろう。"
+                            class="text-input memo-input" style="min-height: 80px;"></textarea>
+                    </div>
+
+                    <button id="add-hypo-btn" class="primary-btn secondary-style">+ このアームを追加</button>
+                </div>
+
+                <!-- Step 2 & 3: Board -->
+                <div class="verification-board mt-8">
+                    <div class="board-header">
+                        <div class="step-badge badge-blue">Step 2 & 3</div>
+                        <h2 class="section-title">小さく試す計画ボード (MABポートフォリオ)</h2>
+                        <div class="board-actions">
+                            <select class="text-input small-select">
+                                <option>追加順</option>
+                            </select>
+                            <select class="text-input small-select">
+                                <option>すべて</option>
+                            </select>
+                            <button id="clear-hypo-btn" class="danger-btn-outline">すべて削除</button>
+                        </div>
+                    </div>
+
+                    <div id="hypothesis-list" class="hypothesis-list-container">
+                        <!-- Hypothesis Cards injected here -->
+                    </div>
+                </div>
+            </div>
+
+
+            </section>
+            <!-- Confidence Analysis View -->
+            <div id="confidence-view" class="view-content hidden">
+                <!-- Step 1: Experiment Log Input -->
+                <div class="card">
+                    <div class="step-badge badge-blue">Step 1</div>
+                    <h2 class="section-title">実験結果を記録する</h2>
+
+                    <div class="form-row mt-4">
+                        <div class="form-group flex-1">
+                            <label class="input-label">アイデア名</label>
+                            <input type="text" id="log-idea-name" placeholder="例：AIで〇〇解説のショート動画" class="text-input">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label class="input-label">テスト名 / 実験名</label>
+                            <input type="text" id="log-test-name" placeholder="例：1週間毎日投稿テスト" class="text-input">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">実施期間</label>
+                        <div class="date-range-row">
+                            <div class="date-input-wrapper">
+                                <span class="date-label-sm">開始</span>
+                                <input type="date" id="log-start-date" class="text-input">
+                            </div>
+                            <div class="date-input-wrapper">
+                                <span class="date-label-sm">終了</span>
+                                <input type="date" id="log-end-date" class="text-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">指標 (Metrics) <span
+                                style="font-size:0.8rem; color:#64748b;">※ここでも編集可能</span></label>
+                        <div id="metrics-container" class="metrics-container">
+                            <!-- Dynamic Metric Inputs will be injected here -->
+                        </div>
+                        <button type="button" id="add-metric-btn" class="text-btn small-btn mt-2"><i
+                                class="fa-solid fa-plus"></i> 指標を追加</button>
+                    </div>
+
+                    <div class="form-group mt-4">
+                        <label class="input-label">メモ (結果の概要)</label>
+                        <textarea id="log-memo" placeholder="例：フォロワーは増えたが、DMは0件だった"
+                            class="text-input memo-input"></textarea>
+                    </div>
+
+                    <button id="add-log-btn" class="primary-btn secondary-style">+ この実験結果を追加</button>
+                </div>
+
+                <!-- Step 2: Learning Log List -->
+                <div class="mt-8">
+                    <div class="board-header">
+                        <div class="step-badge badge-blue">Step 2</div>
+                        <h2 class="section-title">データから学びを言語化する</h2>
+                        <div class="board-actions">
+                            <select class="text-input small-select">
+                                <option>すべてのアイデア</option>
+                            </select>
+                            <select class="text-input small-select">
+                                <option>新しい順</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="learning-log-list">
+                        <div class="empty-state-box">
+                            実験ログがありません。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Confidence Update -->
+                <div id="confidence-tracker-section" class="card mt-8 hidden">
+                    <div class="step-badge badge-blue">Step 3</div>
+                    <h2 class="section-title">仮説の自信度をアップデートする</h2>
+                    <p class="text-muted text-sm mb-4">
+                        小さな実験で得られたデータやフィードバックをもとに、「このアイデアがうまくいく確率」を自分なりに更新していきましょう。<br>これはベイズ更新の "ざっくりバージョン" です。</p>
+
+                    <div class="confidence-tracker-placeholder">
+                        実験を追加すると、ここに自信度トラッカーが表示されます。
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Log Panel (Chat Style) -->
+            <div id="quick-log-panel" class="quick-log-panel hidden">
+                <!-- Header -->
+                <div class="quick-log-header">
+                    <button id="quick-log-back-btn" class="icon-btn hidden" style="margin-right:8px;"><i
+                            class="fa-solid fa-chevron-left"></i></button>
+                    <h3 id="quick-log-title">進捗ログ</h3>
+                    <button class="icon-btn" id="close-quick-log"><i class="fa-solid fa-times"></i></button>
+                </div>
+
+                <!-- View A: Project List -->
+                <div id="quick-log-view-list" class="quick-log-content">
+                    <!-- Project Items injected here -->
+                </div>
+
+                <!-- View B: Chat Interface -->
+                <div id="quick-log-view-chat" class="quick-log-content hidden">
+                    <!-- Chart Section -->
+                    <div id="chat-chart-container" class="chat-chart-container">
+                        <div class="chart-controls">
+                            <!-- Dynamic controls injected by script.js -->
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div id="chat-timeline" class="chat-timeline">
+                        <!-- Chat bubbles injected here -->
+                    </div>
+
+                    <!-- Fixed Input Area -->
+                    <div class="chat-input-area">
+                        <!-- Settings Mode Overlay -->
+                        <div id="chat-settings-panel" class="chat-settings-panel hidden">
+                            <div class="chat-settings-header">
+                                <span>指標のカスタマイズ</span>
+                                <button id="close-chat-settings" class="icon-btn small-btn"><i
+                                        class="fa-solid fa-check"></i> 完了</button>
+                            </div>
+                            <div id="chat-settings-list" class="chat-settings-list">
+                                <!-- Dynamic Metric Settings Items -->
+                            </div>
+                            <button id="add-chat-metric-btn" class="text-btn small-btn mt-2"><i
+                                    class="fa-solid fa-plus"></i> 指標を追加</button>
+                        </div>
+
+                        <!-- Standard Input Mode -->
+                        <div id="chat-input-standard">
+                            <!-- Row 1: Date, Metrics, Settings Btn -->
+                            <div class="chat-input-row-1">
+                                <input type="date" id="chat-date" class="chat-date-input">
+                                <button id="chat-settings-btn" class="icon-btn small-icon-btn" title="指標を編集"><i
+                                        class="fa-solid fa-sliders"></i></button>
+                                <div id="chat-metrics-scroll" class="chat-metrics-scroll">
+                                    <!-- Dynamic Metric Inputs injected here -->
+                                </div>
+                            </div>
+                            <!-- Row 2: Memo & Send -->
+                            <div class="chat-input-row-2">
+                                <textarea id="chat-memo" class="chat-memo-input" placeholder="メモを入力..."></textarea>
+                                <button id="chat-send-btn" class="chat-send-btn"><i
+                                        class="fa-solid fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Clarification Sheet (Bottom Sheet) -->
+            <div id="clarification-sheet-overlay" class="sheet-overlay hidden">
+                <div id="clarification-sheet" class="bottom-sheet large-sheet">
+                    <!-- Sheet Header -->
+                    <div class="sheet-header">
+                        <div class="sheet-header-left">
+                            <span class="sheet-title">タスクの明確化 (Brainstorming)</span>
+                            <div class="sheet-task-name" id="clar-task-title">Task Name</div>
+                        </div>
+                        <button class="icon-btn" id="close-clarification-sheet"><i
+                                class="fa-solid fa-times"></i></button>
+                    </div>
+
+                    <!-- Step Nav -->
+                    <div class="sheet-nav">
+                        <button class="sheet-nav-item active" id="nav-step1" data-step="1">
+                            <span class="step-num">Step 1</span> 発散 (書き出し)
+                            <span class="badge-count" id="step1-count">0/20</span>
+                        </button>
+                        <button class="sheet-nav-item" id="nav-step2" data-step="2">
+                            <span class="step-num">Step 2</span> 収束 (上位5選定)
+                            <i class="fa-solid fa-lock" id="step2-lock-icon"></i>
+                        </button>
+                    </div>
+
+                    <!-- Sheet Content Area -->
+                    <div class="sheet-content-scroll">
+
+                        <!-- Step 1 View -->
+                        <div id="clar-step1-view" class="step-view">
+                            <div class="input-area-sticky">
+                                <div class="input-row">
+                                    <input type="text" id="clar-idea-input" class="text-input"
+                                        placeholder="アイデアを1行で入力 (例: 参考書を3冊買う)">
+                                    <button id="clar-add-btn" class="primary-btn compact-btn">追加</button>
+                                </div>
+                                <div class="bulk-toggle">
+                                    <button class="text-btn-small" id="toggle-bulk-input"><i
+                                            class="fa-solid fa-paste"></i> まとめて貼り付け</button>
+                                </div>
+                                <div id="bulk-input-area" class="bulk-area hidden">
+                                    <textarea id="clar-bulk-text" class="text-input"
+                                        placeholder="改行区切りで複数のアイデアを一括追加..."></textarea>
+                                    <button id="clar-bulk-add-btn" class="secondary-btn compact-btn mt-2">一括追加</button>
+                                </div>
+                            </div>
+
+                            <div class="idea-list-container">
+                                <ul id="clar-idea-list" class="idea-list">
+                                    <!-- Ideas injected here -->
+                                </ul>
+                                <div id="step1-empty-state" class="empty-state-text">
+                                    まずは「どうやって実現するか」を<br>最低20個書き出してみましょう。<br>質より量が重要です。
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2 View -->
+                        <div id="clar-step2-view" class="step-view hidden">
+                            <!-- Top 5 Tray (Sticky) -->
+                            <div class="top5-tray">
+                                <div class="tray-header">
+                                    <span>上位5つの仮説候補</span>
+                                    <span class="tray-count" id="tray-count">0/5</span>
+                                </div>
+                                <div id="top5-list" class="top5-list">
+                                    <!-- Selected items mirror -->
+                                </div>
+                                <button id="send-to-hypo-btn" class="primary-btn mt-4 full-width"
+                                    disabled>上位5つを「仮説検証」へ送る</button>
+                            </div>
+
+                            <div class="selection-list-container">
+                                <p class="instruction-text">書き出したアイデアから、最も効果的と思われるものを5つだけ選んでください。</p>
+                                <ul id="clar-selection-list" class="selection-list">
+                                    <!-- Selection items injected here -->
+                                </ul>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- FAB -->
+        <div class="fab-container group" id="fab-container">
+            <button id="fab-quick-log" class="fab-button">
+                <i class="fa-regular fa-comment-dots"></i>
+            </button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
