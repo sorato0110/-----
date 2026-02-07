@@ -521,7 +521,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const label = document.createElement('label');
             label.className = 'chart-check-label';
             label.style.color = color;
-            // label.dataset.metricId = m.id; // Store ID for reference if needed
 
             // Checkbox
             const checkbox = document.createElement('input');
@@ -531,19 +530,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             checkbox.onchange = (e) => {
                 const isChecked = e.target.checked;
-                const metaIndex = index * 2; // Actual
-                const goalIndex = index * 2 + 1; // Goal
-
-                // Chart.js 'hidden' property: true means hidden.
-                // So checked (true) -> hidden = false.
                 const shouldHide = !isChecked;
 
-                if (progressChart.data.datasets[metaIndex]) {
-                    progressChart.data.datasets[metaIndex].hidden = shouldHide;
-                }
-                if (progressChart.data.datasets[goalIndex]) {
-                    progressChart.data.datasets[goalIndex].hidden = shouldHide;
-                }
+                // Toggle visibility for all datasets belonging to this metric
+                progressChart.data.datasets.forEach(ds => {
+                    if (ds.metricIndex === index) {
+                        ds.hidden = shouldHide;
+                    }
+                });
                 progressChart.update();
             };
 
@@ -561,6 +555,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // State for Chart Zoom
+    let isChartZoomed = false;
+
     // Chart Logic
     function updateChart(hypo) {
         if (!progressChart) {
@@ -570,10 +567,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (!progressChart) return; // Init failed
 
-        // 1. Determine Date Range (Start -> End)
+        // 1. Determine Project Range (Full Duration)
         // Parse Hypo Dates
-        let startDate = hypo.startDate ? new Date(hypo.startDate) : null;
-        let endDate = hypo.endDate ? new Date(hypo.endDate) : null;
+        let projectStartDate = hypo.startDate ? new Date(hypo.startDate) : null;
+        let projectEndDate = hypo.endDate ? new Date(hypo.endDate) : null;
 
         // Check Logs for dates outside range or fallback
         const logs = dailyLogs.filter(l => l.hypoId === hypo.id).sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -583,38 +580,63 @@ document.addEventListener('DOMContentLoaded', () => {
             const lastLogDate = new Date(logs[logs.length - 1].date);
 
             // Fallback if no hypo dates
-            if (!startDate) startDate = firstLogDate;
-            if (!endDate) endDate = lastLogDate;
+            if (!projectStartDate) projectStartDate = firstLogDate;
+            if (!projectEndDate) projectEndDate = lastLogDate;
 
             // Extend range if logs exist outside planned dates
-            if (firstLogDate < startDate) startDate = firstLogDate;
-            if (lastLogDate > endDate) endDate = lastLogDate;
+            if (firstLogDate < projectStartDate) projectStartDate = firstLogDate;
+            if (lastLogDate > projectEndDate) projectEndDate = lastLogDate;
         }
 
         // Defaults if completely empty
-        if (!startDate) startDate = new Date();
-        if (!endDate) {
-            const d = new Date(startDate);
+        if (!projectStartDate) projectStartDate = new Date();
+        if (!projectEndDate) {
+            const d = new Date(projectStartDate);
             d.setDate(d.getDate() + 7); // Default 1 week
-            endDate = d;
+            projectEndDate = d;
         }
 
         // Safety: Ensure Start <= End
-        if (startDate > endDate) {
-            const temp = startDate;
-            startDate = endDate;
-            endDate = temp;
+        if (projectStartDate > projectEndDate) {
+            const temp = projectStartDate;
+            projectStartDate = projectEndDate;
+            projectEndDate = temp;
         }
 
-        // 2. Generate Daily Labels & Map
+        // 2. Determine Display Range (Zoom Logic)
+        let displayStartDate = new Date(projectStartDate);
+        let displayEndDate = new Date(projectEndDate);
+
+        // Always ensure we show up to today if the project end date is in the past, or at least the end date
+        // Actually, usually we want to see up to the end of the plan.
+
+        if (isChartZoomed) {
+            // Zoom to last 14 days from the END of the display range (or today)
+            // Let's assume the user wants to see "Recent" context.
+            // If project is ongoing, end is likely max(today, planEnd).
+            // However, strictly "Recent" implies relative to Today or relative to Data End.
+            // Let's use displayEndDate as the anchor.
+
+            const zoomDays = 13; // 14 days total including end date
+            const zoomedStart = new Date(displayEndDate);
+            zoomedStart.setDate(zoomedStart.getDate() - zoomDays);
+
+            // If zoomed start is before project start, clamp it (effectively disables zoom if project is short)
+            if (zoomedStart > projectStartDate) {
+                displayStartDate = zoomedStart;
+            }
+        }
+
+
+        // 3. Generate Daily Labels & Map for DISPLAY Range
         const labels = [];
         const dateMap = [];
 
-        let curr = new Date(startDate);
+        let curr = new Date(displayStartDate);
         curr.setHours(0, 0, 0, 0); // Normalize
-        const endUnix = new Date(endDate).setHours(0, 0, 0, 0);
+        const endUnix = new Date(displayEndDate).setHours(0, 0, 0, 0);
 
-        const MAX_DAYS = 730; // Cap at 2 years to prevent freezing
+        const MAX_DAYS = 730; // Cap at 2 years
         let safety = 0;
 
         while (curr.getTime() <= endUnix && safety < MAX_DAYS) {
@@ -624,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
             safety++;
         }
 
-        // 3. Prepare Metrics
+        // 4. Prepare Metrics
         const metrics = hypo.metrics && hypo.metrics.length > 0 ? hypo.metrics : [
             { id: 'def1', label: 'Reach', target: 0 },
             { id: 'def2', label: 'Reaction', target: 0 },
@@ -633,25 +655,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderChartControls(metrics);
 
-        // 4. Build Datasets
+        // 5. Build Datasets
         progressChart.data.datasets = [];
         const colors = ['#3b82f6', '#eab308', '#ef4444', '#10b981', '#8b5cf6', '#f97316'];
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        // Pre-calculate initial total before displayStartDate (for Zoom)
+        // This is crucial for cumulative graphs to look correct
+        // map: metricLabel -> totalBeforeStart
+        const initialTotals = {};
+
+        if (isChartZoomed && displayStartDate > projectStartDate) {
+            metrics.forEach(m => {
+                let sum = 0;
+                // Sum logs strictly before displayStartDate
+                const preLogs = logs.filter(l => {
+                    const ld = new Date(l.date);
+                    ld.setHours(0, 0, 0, 0);
+                    return ld < displayStartDate;
+                });
+                preLogs.forEach(l => {
+                    const val = parseFloat(l.metrics ? l.metrics[m.label] : 0) || 0;
+                    sum += val;
+                });
+                initialTotals[m.label] = sum;
+            });
+        }
+
+
         metrics.forEach((m, index) => {
             const color = colors[index % colors.length];
 
-            // A) Actual Data (Cumulative & Forward Fill)
-            let currentTotal = 0;
+            // A) Actual Data (Cumulative)
+            let currentTotal = initialTotals[m.label] || 0;
 
             // Determine cutoff date for plotting actuals
-            // Rule: Plot up to Today OR the Last Log Date (whichever is later)
-            // This allows future logs to be seen, but stops flat-lining into deep future.
             let plotCutoff = new Date(today);
             if (logs.length > 0) {
-                const lastLogDate = new Date(logs[logs.length - 1].date); // logs are sorted asc
+                const lastLogDate = new Date(logs[logs.length - 1].date);
                 lastLogDate.setHours(0, 0, 0, 0);
                 if (lastLogDate > plotCutoff) {
                     plotCutoff = lastLogDate;
@@ -660,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const actualData = dateMap.map(d => {
                 // Future check: Don't plot actuals beyond cutoff
-                if (d > plotCutoff) return null;
+                // BUT keep calculating total if we had future logs (unlikely but safe)
 
                 // Sum logs for this specific day
                 const dStr = d.getFullYear() + '-' +
@@ -673,6 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTotal += val;
                 });
 
+                if (d > plotCutoff) return null;
                 return currentTotal;
             });
 
@@ -684,15 +728,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 tension: 0.1,
                 borderWidth: 3,
                 fill: false,
-                spanGaps: true
+                spanGaps: true,
+                metricIndex: index
             });
 
-            // B) Ideal Goal Line (Linear Trend)
+            // B) Ideal Goal Line (Linear Trend based on Project Start)
             if (m.target > 0) {
-                const totalDuration = endDate.getTime() - startDate.getTime();
+                const totalDuration = projectEndDate.getTime() - projectStartDate.getTime();
                 const goalData = dateMap.map(d => {
                     if (totalDuration === 0) return m.target;
-                    const elapsed = d.getTime() - startDate.getTime();
+
+                    // Elapsed from PROJECT start, not display start
+                    const elapsed = d.getTime() - projectStartDate.getTime();
+
+                    // Clamp if needed? Linear extension is fine generally.
                     const ratio = elapsed / totalDuration;
                     return Math.round(m.target * ratio);
                 });
@@ -705,15 +754,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     pointRadius: 0,
                     fill: false,
                     borderDash: [5, 5],
-                    spanGaps: true
+                    spanGaps: true,
+                    metricIndex: index
                 });
-            } else {
-                // Placeholder to maintain index alignment (2 datasets per metric)
-                progressChart.data.datasets.push({
-                    label: 'Hidden',
-                    data: [],
-                    hidden: true
-                });
+            }
+
+            // C) Criteria Lines (Success, Pivot, Stop)
+            if (hypo.criteria && hypo.criteria.metricId === m.id) {
+                const createCriteriaDataset = (label, value, lineColor) => {
+                    return {
+                        label: `[Criteria] ${label}`,
+                        data: dateMap.map(() => value),
+                        borderColor: lineColor,
+                        borderWidth: 2,
+                        borderDash: [2, 4],
+                        pointRadius: 0,
+                        fill: false,
+                        metricIndex: index
+                    };
+                };
+
+                if (hypo.criteria.success) {
+                    progressChart.data.datasets.push(createCriteriaDataset('Success', hypo.criteria.success.val, '#10b981'));
+                }
+                if (hypo.criteria.pivot) {
+                    progressChart.data.datasets.push(createCriteriaDataset('Pivot', hypo.criteria.pivot.val, '#f59e0b'));
+                }
+                if (hypo.criteria.stop) {
+                    progressChart.data.datasets.push(createCriteriaDataset('Stop', hypo.criteria.stop.val, '#ef4444'));
+                }
             }
         });
 
@@ -747,6 +816,13 @@ document.addEventListener('DOMContentLoaded', () => {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onClick: (e) => {
+                    // Toggle Zoom
+                    isChartZoomed = !isChartZoomed;
+                    if (currentHypoForChat) {
+                        updateChart(currentHypoForChat);
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
