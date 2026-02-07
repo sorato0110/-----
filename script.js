@@ -557,6 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // State for Chart Zoom
     let isChartZoomed = false;
+    let zoomCenterDate = null;
 
     // Chart Logic
     function updateChart(hypo) {
@@ -611,19 +612,30 @@ document.addEventListener('DOMContentLoaded', () => {
         // Actually, usually we want to see up to the end of the plan.
 
         if (isChartZoomed) {
-            // Zoom to last 14 days from the END of the display range (or today)
-            // Let's assume the user wants to see "Recent" context.
-            // If project is ongoing, end is likely max(today, planEnd).
-            // However, strictly "Recent" implies relative to Today or relative to Data End.
-            // Let's use displayEndDate as the anchor.
+            // Zoom Logic
+            // If we have a center date (clicked point), center around it
+            if (zoomCenterDate) {
+                // 14 days total -> center +/- 6-7 days
+                // Let's aim for the clicked date to be in the middle (7th day)
+                const center = new Date(zoomCenterDate);
+                const start = new Date(center);
+                start.setDate(start.getDate() - 6);
 
-            const zoomDays = 13; // 14 days total including end date
-            const zoomedStart = new Date(displayEndDate);
-            zoomedStart.setDate(zoomedStart.getDate() - zoomDays);
+                const end = new Date(center);
+                end.setDate(end.getDate() + 7);
 
-            // If zoomed start is before project start, clamp it (effectively disables zoom if project is short)
-            if (zoomedStart > projectStartDate) {
-                displayStartDate = zoomedStart;
+                displayStartDate = start;
+                displayEndDate = end;
+            } else {
+                // Default Zoom: Last 14 days relative to displayEndDate (usually "latest")
+                const zoomDays = 13; // 14 days total including end date
+                const zoomedStart = new Date(displayEndDate);
+                zoomedStart.setDate(zoomedStart.getDate() - zoomDays);
+
+                // If zoomed start is before project start, clamp it (effectively disables zoom if project is short)
+                if (zoomedStart > projectStartDate) {
+                    displayStartDate = zoomedStart;
+                }
             }
         }
 
@@ -787,6 +799,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         progressChart.data.labels = labels;
+        // Attach dateMap for click handler
+        progressChart.dateMap = dateMap;
         progressChart.update();
     }
 
@@ -817,8 +831,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 responsive: true,
                 maintainAspectRatio: false,
                 onClick: (e) => {
-                    // Toggle Zoom
-                    isChartZoomed = !isChartZoomed;
+                    const points = progressChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+
+                    if (points.length) {
+                        const firstPoint = points[0];
+                        const label = progressChart.data.labels[firstPoint.index];
+                        // label is like "M/D", need to map back to full date
+                        // We don't have direct access to dateMap here easily without scope?
+                        // Actually updateChart scope is gone.
+                        // But we can parse label if it's unique enough or rely on index if we saved dateMap somewhere.
+                        // Better: We saved dateMap in the closure of updateChart? No.
+                        // Let's rely on string parsing if format is "M/D" -> might be ambiguous year.
+                        // Safe bet: Save the dateMap in the chart object itself?
+                        // Or just iterate from project start... 
+
+                        // Hack: Let's assume current year? No, problematic.
+                        // Let's store full dates in the dataset meta or verify index?
+                        // The `labels` array is "M/D". 
+                        // Let's make `dateMap` global or accessible.
+                        // Actually, we can just use `zoomCenterDate = null` (toggle) if we can't find date.
+
+                        // Let's try to pass dateMap via chart options or plugin? To keep it simple:
+                        // We can infer date from index IF the chart data hasn't changed.
+                        // BUT `updateChart` re-generates data. 
+                        // Check if `dateMap` can be elevated to module scope or attached to chart.
+
+                        // Let's attach dateMap to the chart instance in updateChart.
+                        if (progressChart.dateMap && progressChart.dateMap[firstPoint.index]) {
+                            zoomCenterDate = progressChart.dateMap[firstPoint.index];
+                            isChartZoomed = true;
+                        } else {
+                            // Fallback toggle
+                            isChartZoomed = !isChartZoomed;
+                            zoomCenterDate = null;
+                        }
+
+                    } else {
+                        // Background click -> Toggle Zoom reset
+                        if (isChartZoomed) {
+                            isChartZoomed = false;
+                            zoomCenterDate = null;
+                        } else {
+                            isChartZoomed = true;
+                            zoomCenterDate = null; // Default to latest
+                        }
+                    }
+
                     if (currentHypoForChat) {
                         updateChart(currentHypoForChat);
                     }
