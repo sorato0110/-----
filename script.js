@@ -1305,6 +1305,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Criteria Status Logic
+        const criteriaResult = evaluateCriteria(hypo);
+        let criteriaBadge = '';
+        if (criteriaResult) {
+            // Check deadline for strict warning? For now just show status if data exists
+            criteriaBadge = `<span class="criteria-badge" style="background-color:${criteriaResult.color}15; color:${criteriaResult.color}; border:1px solid ${criteriaResult.color}40; padding:2px 8px; border-radius:12px; font-size:0.75rem; display:flex; align-items:center; gap:4px; margin-right:8px;">
+                <i class="fa-solid ${criteriaResult.icon}"></i> ${criteriaResult.label}
+            </span>`;
+        }
+
         // Simple trend logic
         let trendIcon = '<i class="fa-solid fa-minus trend-icon trend-flat"></i>';
         if (logCount > 2) trendIcon = '<i class="fa-solid fa-arrow-trend-up trend-icon trend-up"></i>';
@@ -1319,6 +1329,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <option value="drop" ${hypo.status === 'drop' ? 'selected' : ''}>Drop (中断)</option>
                     <option value="completed" ${hypo.status === 'completed' ? 'selected' : ''}>Completed</option>
                 </select>
+                ${criteriaBadge}
                 ${expiredBadge}
 
                 <div class="resource-slider-container">
@@ -1336,6 +1347,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 <div class="hypo-utils">
                     ${trendIcon}
+                    <button class="icon-action" onclick="openCriteriaModal('${hypo.id}')" title="撤退基準"><i class="fa-solid fa-scale-balanced"></i></button>
                     <button class="icon-action" onclick="moveToConfidence('${hypo.id}')" title="分析"><i class="fa-solid fa-chart-line"></i></button>
                     <button class="icon-action" onclick="deleteHypo('${hypo.id}')"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -1415,7 +1427,139 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Expose functions to window
+
+    function evaluateCriteria(hypo) {
+        if (!hypo.criteria) return null;
+
+        // Find latest value for the metric
+        const metricId = hypo.criteria.metricId;
+        const metricObj = (hypo.metrics || []).find(m => m.id === metricId);
+        if (!metricObj) return null;
+        const metricLabel = metricObj.label;
+
+        // Get logs
+        const logs = dailyLogs.filter(l => l.hypoId === hypo.id);
+        if (logs.length === 0) return { status: 'PENDING', label: 'No Data', color: '#94a3b8', icon: 'fa-hourglass-start' };
+
+        // Sort by date desc
+        logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const latestLog = logs[0];
+        const currentVal = parseFloat(latestLog.metrics ? latestLog.metrics[metricLabel] : 0) || 0;
+
+        // Check Levels
+        // Success
+        const sOp = hypo.criteria.success.op;
+        const sVal = hypo.criteria.success.val;
+        let isSuccess = false;
+        if (sOp === '>=' && currentVal >= sVal) isSuccess = true;
+        if (sOp === '<=' && currentVal <= sVal) isSuccess = true;
+
+        if (isSuccess) return { status: 'SUCCESS', label: 'GO / EXPAND', color: '#10b981', icon: 'fa-rocket' };
+
+        // Stop
+        const stopVal = hypo.criteria.stop.val;
+        let isStop = false;
+        if (sOp === '>=' && currentVal < stopVal) isStop = true;
+        if (sOp === '<=' && currentVal > stopVal) isStop = true;
+
+        if (isStop) return { status: 'STOP', label: 'STOP / ABORT', color: '#ef4444', icon: 'fa-ban' };
+
+        // Pivot (Middle ground)
+        return { status: 'PIVOT', label: 'PIVOT / ITERATE', color: '#f59e0b', icon: 'fa-rotate' };
+    }
+
+    // Modal Elements (Lazy bind or global)
+    const criteriaModalOverlay = document.getElementById('criteria-modal-overlay');
+    const closeCriteriaModalBtn = document.getElementById('close-criteria-modal');
+    const saveCriteriaBtn = document.getElementById('save-criteria-btn');
+    const criteriaMetricSelect = document.getElementById('criteria-metric-select');
+    const criteriaDeadline = document.getElementById('criteria-deadline');
+    const criteriaOpSuccess = document.getElementById('criteria-op-success');
+    const criteriaValSuccess = document.getElementById('criteria-val-success');
+    const criteriaValPivot = document.getElementById('criteria-val-pivot');
+    const criteriaValStop = document.getElementById('criteria-val-stop');
+
+    let currentHypoForCriteria = null;
+
+    if (closeCriteriaModalBtn) {
+        closeCriteriaModalBtn.addEventListener('click', () => {
+            criteriaModalOverlay.classList.add('hidden');
+        });
+    }
+
+    if (saveCriteriaBtn) {
+        saveCriteriaBtn.addEventListener('click', () => {
+            if (!currentHypoForCriteria) return;
+
+            const metricId = criteriaMetricSelect.value;
+            const deadline = criteriaDeadline.value;
+
+            if (!metricId || !deadline) {
+                alert('KPIと判定日は必須です');
+                return;
+            }
+
+            const newCriteria = {
+                metricId,
+                deadline,
+                success: { op: criteriaOpSuccess.value, val: parseFloat(criteriaValSuccess.value) || 0 },
+                pivot: { op: '<', val: (parseFloat(criteriaValPivot.value) || (parseFloat(criteriaValPivot.value) === 0 ? 0 : 0)) },
+                stop: { op: '<', val: parseFloat(criteriaValStop.value) || 0 }
+            };
+
+            currentHypoForCriteria.criteria = newCriteria;
+            saveHypotheses();
+            renderHypotheses();
+            criteriaModalOverlay.classList.add('hidden');
+        });
+    }
+
+    window.openCriteriaModal = (hypoId) => {
+        const hypo = hypotheses.find(h => h.id === hypoId);
+        if (!hypo || !criteriaModalOverlay) return;
+        currentHypoForCriteria = hypo;
+
+        // Populate Select
+        criteriaMetricSelect.innerHTML = '';
+        if (hypo.metrics && hypo.metrics.length > 0) {
+            hypo.metrics.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.label;
+                criteriaMetricSelect.appendChild(opt);
+            });
+        } else {
+            criteriaMetricSelect.innerHTML = '<option value="">KPIがありません</option>';
+        }
+
+        // Pre-fill
+        if (hypo.criteria) {
+            criteriaMetricSelect.value = hypo.criteria.metricId || '';
+            criteriaDeadline.value = hypo.criteria.deadline || '';
+            if (hypo.criteria.success) {
+                criteriaOpSuccess.value = hypo.criteria.success.op;
+                criteriaValSuccess.value = hypo.criteria.success.val;
+            }
+            if (hypo.criteria.pivot) criteriaValPivot.value = hypo.criteria.pivot.val;
+            if (hypo.criteria.stop) criteriaValStop.value = hypo.criteria.stop.val;
+        } else {
+            // Default to Hypothesis End Date if available
+            if (hypo.endDate) {
+                criteriaDeadline.value = hypo.endDate;
+            } else {
+                const d = new Date();
+                d.setDate(d.getDate() + 14);
+                criteriaDeadline.valueAsDate = d;
+            }
+
+            criteriaValSuccess.value = '';
+            criteriaValPivot.value = '';
+            criteriaValStop.value = '';
+        }
+
+        criteriaModalOverlay.classList.remove('hidden');
+    }
+
 
 
     window.deleteTask = (id) => {

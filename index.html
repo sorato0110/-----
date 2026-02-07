@@ -434,6 +434,84 @@
                     </div>
                 </div>
             </div>
+            <!-- Criteria Setting Modal -->
+            <div id="criteria-modal-overlay" class="modal-overlay hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fa-solid fa-scale-balanced"></i> 撤退基準・成功定義の設定</h3>
+                        <button id="close-criteria-modal" class="icon-btn"><i class="fa-solid fa-times"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="modal-description">
+                            「感情」ではなく「数字」で判断するための契約書です。<br>
+                            期限までに目標に達しなかった場合の行動を事前に決めておきましょう。
+                        </p>
+
+                        <div class="form-group">
+                            <label class="input-label">判定に使う指標 (KPI)</label>
+                            <select id="criteria-metric-select" class="text-input">
+                                <!-- Dynamic options -->
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="input-label">判定日 (Deadline)</label>
+                            <input type="date" id="criteria-deadline" class="text-input">
+                        </div>
+
+                        <div class="criteria-levels">
+                            <!-- Level 1: Success -->
+                            <div class="criteria-level level-success">
+                                <div class="level-icon"><i class="fa-solid fa-rocket"></i></div>
+                                <div class="level-content">
+                                    <label>基本目標 (GO / EXPAND)</label>
+                                    <div class="level-inputs">
+                                        <select id="criteria-op-success" class="small-select">
+                                            <option value=">=">以上 (>=)</option>
+                                            <option value="<=">以下 (<=)< /option>
+                                        </select>
+                                        <input type="number" id="criteria-val-success" class="text-input small-input"
+                                            placeholder="例: 100">
+                                    </div>
+                                    <p class="level-desc">この数値を超えたら、検証成功。本格運用へ。</p>
+                                </div>
+                            </div>
+
+                            <!-- Level 2: Pivot -->
+                            <div class="criteria-level level-pivot">
+                                <div class="level-icon"><i class="fa-solid fa-rotate"></i></div>
+                                <div class="level-content">
+                                    <label>要改善 (PIVOT / ITERATE)</label>
+                                    <div class="level-inputs">
+                                        <span>もし</span>
+                                        <input type="number" id="criteria-val-pivot" class="text-input small-input"
+                                            placeholder="例: 50">
+                                        <span>未満なら...</span>
+                                    </div>
+                                    <p class="level-desc">方向性は良いが、方法を変える必要がある。</p>
+                                </div>
+                            </div>
+
+                            <!-- Level 3: Stop -->
+                            <div class="criteria-level level-stop">
+                                <div class="level-icon"><i class="fa-solid fa-hand"></i></div>
+                                <div class="level-content">
+                                    <label>撤退ライン (STOP / ABORT)</label>
+                                    <div class="level-inputs">
+                                        <span>もし</span>
+                                        <input type="number" id="criteria-val-stop" class="text-input small-input"
+                                            placeholder="例: 10">
+                                        <span>未満なら...</span>
+                                    </div>
+                                    <p class="level-desc">サンクコストを無視して、潔く撤退する。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="save-criteria-btn" class="primary-btn mt-4 full-width">この基準で契約する</button>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <!-- FAB -->

@@ -2408,3 +2408,175 @@ body {
     opacity: 1 !important;
     /* Force opacity */
 }
+
+/* Criteria Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(2px);
+}
+
+.modal-content {
+    background: white;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-body {
+    padding: 20px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-description {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    line-height: 1.6;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.criteria-levels {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.criteria-level {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+
+.criteria-level .level-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.level-content {
+    flex: 1;
+}
+
+.level-content label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.level-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.small-input {
+    width: 80px;
+    padding: 6px;
+}
+
+.level-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Level Specifics */
+.level-success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.level-success .level-icon {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.level-success label {
+    color: #15803d;
+}
+
+.level-pivot {
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.level-pivot .level-icon {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.level-pivot label {
+    color: #b45309;
+}
+
+.level-stop {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.level-stop .level-icon {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.level-stop label {
+    color: #b91c1c;
+}
+
+.criteria-badge {
+    animation: fadeIn 0.5s;
+}
