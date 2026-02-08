@@ -1598,6 +1598,38 @@ body {
     overflow-y: auto;
 }
 
+/* Chart Control Styles */
+.chart-reset-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(4px);
+    margin-left: 8px;
+    height: 32px;
+}
+
+.chart-reset-btn:hover {
+    background: white;
+    color: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.chart-reset-btn i {
+    font-size: 0.8rem;
+}
+
 .chat-setting-item {
     display: flex;
     align-items: center;

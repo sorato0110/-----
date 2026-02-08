@@ -301,8 +301,14 @@
                 <div id="quick-log-view-chat" class="quick-log-content hidden">
                     <!-- Chart Section -->
                     <div id="chat-chart-container" class="chat-chart-container">
-                        <div class="chart-controls">
-                            <!-- Dynamic controls injected by script.js -->
+                        <div class="chart-header-row"
+                            style="display:flex; justify-content:space-between; align-items:center;">
+                            <div class="chart-controls" style="flex:1;">
+                                <!-- Dynamic controls injected by script.js -->
+                            </div>
+                            <button id="chart-reset-zoom-btn" class="chart-reset-btn hidden">
+                                <i class="fa-solid fa-compress"></i> 全期間
+                            </button>
                         </div>
                         <div class="chart-wrapper">
                             <canvas id="progressChart"></canvas>

@@ -739,9 +739,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 backgroundColor: color,
                 tension: 0.1,
                 borderWidth: 3,
+                borderWidth: 3,
                 fill: false,
                 spanGaps: true,
-                metricIndex: index
+                metricIndex: index,
+                pointHitRadius: 25 // Easier touch target
             });
 
             // B) Ideal Goal Line (Linear Trend based on Project Start)
@@ -802,6 +804,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // Attach dateMap for click handler
         progressChart.dateMap = dateMap;
         progressChart.update();
+
+        // Control Reset Button Visibility
+        const resetBtn = document.getElementById('chart-reset-zoom-btn');
+        if (resetBtn) {
+            if (isChartZoomed) {
+                resetBtn.classList.remove('hidden');
+                resetBtn.onclick = () => {
+                    isChartZoomed = false;
+                    zoomCenterDate = null;
+                    if (currentHypoForChat) updateChart(currentHypoForChat);
+                };
+            } else {
+                resetBtn.classList.add('hidden');
+            }
+        }
     }
 
     function computeCumulative(arr) {
@@ -830,52 +847,22 @@ document.addEventListener('DOMContentLoaded', () => {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
                 onClick: (e) => {
-                    const points = progressChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+                    const points = progressChart.getElementsAtEventForMode(e, 'index', { intersect: false }, true);
 
                     if (points.length) {
                         const firstPoint = points[0];
-                        const label = progressChart.data.labels[firstPoint.index];
-                        // label is like "M/D", need to map back to full date
-                        // We don't have direct access to dateMap here easily without scope?
-                        // Actually updateChart scope is gone.
-                        // But we can parse label if it's unique enough or rely on index if we saved dateMap somewhere.
-                        // Better: We saved dateMap in the closure of updateChart? No.
-                        // Let's rely on string parsing if format is "M/D" -> might be ambiguous year.
-                        // Safe bet: Save the dateMap in the chart object itself?
-                        // Or just iterate from project start... 
-
-                        // Hack: Let's assume current year? No, problematic.
-                        // Let's store full dates in the dataset meta or verify index?
-                        // The `labels` array is "M/D". 
-                        // Let's make `dateMap` global or accessible.
-                        // Actually, we can just use `zoomCenterDate = null` (toggle) if we can't find date.
-
-                        // Let's try to pass dateMap via chart options or plugin? To keep it simple:
-                        // We can infer date from index IF the chart data hasn't changed.
-                        // BUT `updateChart` re-generates data. 
-                        // Check if `dateMap` can be elevated to module scope or attached to chart.
-
-                        // Let's attach dateMap to the chart instance in updateChart.
                         if (progressChart.dateMap && progressChart.dateMap[firstPoint.index]) {
                             zoomCenterDate = progressChart.dateMap[firstPoint.index];
                             isChartZoomed = true;
-                        } else {
-                            // Fallback toggle
-                            isChartZoomed = !isChartZoomed;
-                            zoomCenterDate = null;
-                        }
-
-                    } else {
-                        // Background click -> Toggle Zoom reset
-                        if (isChartZoomed) {
-                            isChartZoomed = false;
-                            zoomCenterDate = null;
-                        } else {
-                            isChartZoomed = true;
-                            zoomCenterDate = null; // Default to latest
+                            if (currentHypoForChat) updateChart(currentHypoForChat);
                         }
                     }
+                    // Removed simple background toggle since we now use the button
 
                     if (currentHypoForChat) {
                         updateChart(currentHypoForChat);
