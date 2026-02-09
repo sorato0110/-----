@@ -557,6 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // State for Chart Zoom
     let isChartZoomed = false;
+    let zoomLevel = 0; // 0: None, 1: 14days, 2: 7days, 3: 3days
     let zoomCenterDate = null;
 
     // Chart Logic
@@ -615,24 +616,31 @@ document.addEventListener('DOMContentLoaded', () => {
             // Zoom Logic
             // If we have a center date (clicked point), center around it
             if (zoomCenterDate) {
-                // 14 days total -> center +/- 6-7 days
-                // Let's aim for the clicked date to be in the middle (7th day)
+                // Progressive Zoom Logic
+                let daysToShow = 14;
+                if (zoomLevel === 2) daysToShow = 7;
+                if (zoomLevel === 3) daysToShow = 3;
+
+                const half = Math.floor(daysToShow / 2);
+
                 const center = new Date(zoomCenterDate);
                 const start = new Date(center);
-                start.setDate(start.getDate() - 6);
+                start.setDate(start.getDate() - half);
 
-                const end = new Date(center);
-                end.setDate(end.getDate() + 7);
+                // For odd numbers, half * 2 is less than total, so add remainder
+                // But simplified: end = start + daysToShow
+                const end = new Date(start);
+                end.setDate(end.getDate() + daysToShow);
 
                 displayStartDate = start;
                 displayEndDate = end;
             } else {
-                // Default Zoom: Last 14 days relative to displayEndDate (usually "latest")
-                const zoomDays = 13; // 14 days total including end date
+                // Default Zoom (fallback if no center, though usually has center if zoomed via click)
+                // Treat as level 1 (14 days) from end
+                const zoomDays = 13;
                 const zoomedStart = new Date(displayEndDate);
                 zoomedStart.setDate(zoomedStart.getDate() - zoomDays);
 
-                // If zoomed start is before project start, clamp it (effectively disables zoom if project is short)
                 if (zoomedStart > projectStartDate) {
                     displayStartDate = zoomedStart;
                 }
@@ -812,6 +820,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resetBtn.classList.remove('hidden');
                 resetBtn.onclick = () => {
                     isChartZoomed = false;
+                    zoomLevel = 0; // Reset level
                     zoomCenterDate = null;
                     if (currentHypoForChat) updateChart(currentHypoForChat);
                 };
@@ -858,14 +867,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         const firstPoint = points[0];
                         if (progressChart.dateMap && progressChart.dateMap[firstPoint.index]) {
                             zoomCenterDate = progressChart.dateMap[firstPoint.index];
-                            isChartZoomed = true;
+
+                            // Progressive Zoom Logic
+                            if (zoomLevel < 3) {
+                                zoomLevel++;
+                            }
+                            isChartZoomed = true; // Level 1-3 implies zoomed
+
                             if (currentHypoForChat) updateChart(currentHypoForChat);
                         }
-                    }
-                    // Removed simple background toggle since we now use the button
-
-                    if (currentHypoForChat) {
-                        updateChart(currentHypoForChat);
                     }
                 },
                 scales: {
