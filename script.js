@@ -879,7 +879,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 plugins: {
                     legend: {
+                        display: false,
                         labels: { color: '#e2e8f0' }
+                    },
+                    tooltip: {
+                        enabled: false
                     }
                 }
             }
