@@ -507,6 +507,26 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();
     }
 
+    // Chart View Switcher Logic
+    let currentChartMode = 'line'; // 'line', 'bar', 'calendar'
+    const chartViewBtns = document.querySelectorAll('.view-switch-btn');
+    const calendarContainer = document.getElementById('calendar-view-container');
+    const chartCanvas = document.getElementById('progressChart');
+
+    chartViewBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update UI
+            chartViewBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update State
+            currentChartMode = btn.dataset.mode;
+
+            // Trigger Render
+            if (currentHypoForChat) updateChart(currentHypoForChat);
+        });
+    });
+
 
     // Generate Chart Controls Dynamically
     function renderChartControls(metrics) {
@@ -675,22 +695,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderChartControls(metrics);
 
-        // 5. Build Datasets
+        // 5. Select Mode & Render
+        if (currentChartMode === 'calendar') {
+            // Hide Chart, Show Calendar
+            if (chartCanvas) chartCanvas.classList.add('hidden');
+            if (calendarContainer) calendarContainer.classList.remove('hidden');
+
+            renderCalendarView(hypo, logs, displayStartDate, displayEndDate);
+            return; // Stop Chart.js rendering
+        } else {
+            // Show Chart, Hide Calendar
+            if (chartCanvas) chartCanvas.classList.remove('hidden');
+            if (calendarContainer) calendarContainer.classList.add('hidden');
+        }
+
         progressChart.data.datasets = [];
         const colors = ['#3b82f6', '#eab308', '#ef4444', '#10b981', '#8b5cf6', '#f97316'];
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Pre-calculate initial total before displayStartDate (for Zoom)
-        // This is crucial for cumulative graphs to look correct
-        // map: metricLabel -> totalBeforeStart
+        // Pre-calculate initial total before displayStartDate (for Cumulative Line Chart Zoom)
         const initialTotals = {};
 
-        if (isChartZoomed && displayStartDate > projectStartDate) {
+        if (currentChartMode === 'line' && isChartZoomed && displayStartDate > projectStartDate) {
             metrics.forEach(m => {
                 let sum = 0;
-                // Sum logs strictly before displayStartDate
                 const preLogs = logs.filter(l => {
                     const ld = new Date(l.date);
                     ld.setHours(0, 0, 0, 0);
@@ -704,66 +734,66 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-
         metrics.forEach((m, index) => {
             const color = colors[index % colors.length];
 
-            // A) Actual Data (Cumulative)
+            // A) Actual Data
             let currentTotal = initialTotals[m.label] || 0;
-
-            // Determine cutoff date for plotting actuals
             let plotCutoff = new Date(today);
             if (logs.length > 0) {
                 const lastLogDate = new Date(logs[logs.length - 1].date);
                 lastLogDate.setHours(0, 0, 0, 0);
-                if (lastLogDate > plotCutoff) {
-                    plotCutoff = lastLogDate;
-                }
+                if (lastLogDate > plotCutoff) plotCutoff = lastLogDate;
             }
 
             const actualData = dateMap.map(d => {
-                // Future check: Don't plot actuals beyond cutoff
-                // BUT keep calculating total if we had future logs (unlikely but safe)
-
-                // Sum logs for this specific day
+                // Get daily sum
                 const dStr = d.getFullYear() + '-' +
                     String(d.getMonth() + 1).padStart(2, '0') + '-' +
                     String(d.getDate()).padStart(2, '0');
 
+                let dailyVal = 0;
                 const dayLogs = logs.filter(l => l.date === dStr);
                 dayLogs.forEach(l => {
-                    const val = parseFloat(l.metrics ? l.metrics[m.label] : 0) || 0;
-                    currentTotal += val;
+                    dailyVal += (parseFloat(l.metrics ? l.metrics[m.label] : 0) || 0);
                 });
 
-                if (d > plotCutoff) return null;
-                return currentTotal;
+                if (currentChartMode === 'line') {
+                    // Cumulative
+                    currentTotal += dailyVal;
+                    if (d > plotCutoff) return null;
+                    return currentTotal;
+                } else {
+                    // Bar (Daily)
+                    if (d > plotCutoff && dailyVal === 0) return null; // Don't plot zeros in future?
+                    // Actually for bar it's better to show empty space typically, but let's null safety
+                    if (d > plotCutoff) return null;
+                    return dailyVal;
+                }
             });
 
             progressChart.data.datasets.push({
                 label: m.label,
                 data: actualData,
+                backgroundColor: currentChartMode === 'bar' ? color : color,
                 borderColor: color,
-                backgroundColor: color,
                 tension: 0.1,
-                borderWidth: 3,
-                borderWidth: 3,
+                borderWidth: currentChartMode === 'bar' ? 0 : 3,
                 fill: false,
                 spanGaps: true,
                 metricIndex: index,
-                pointHitRadius: 25 // Easier touch target
+                pointHitRadius: 25,
+                // Bar specific props
+                barPercentage: 0.6,
+                categoryPercentage: 0.8
             });
 
-            // B) Ideal Goal Line (Linear Trend based on Project Start)
-            if (m.target > 0) {
+            // B) Ideal Goal Line (Only for Cumulative Line Chart)
+            if (currentChartMode === 'line' && m.target > 0) {
                 const totalDuration = projectEndDate.getTime() - projectStartDate.getTime();
                 const goalData = dateMap.map(d => {
                     if (totalDuration === 0) return m.target;
-
-                    // Elapsed from PROJECT start, not display start
                     const elapsed = d.getTime() - projectStartDate.getTime();
-
-                    // Clamp if needed? Linear extension is fine generally.
                     const ratio = elapsed / totalDuration;
                     return Math.round(m.target * ratio);
                 });
@@ -781,8 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // C) Criteria Lines (Success, Pivot, Stop)
-            if (hypo.criteria && hypo.criteria.metricId === m.id) {
+            // C) Criteria Lines (Only for Cumulative Line Chart)
+            if (currentChartMode === 'line' && hypo.criteria && hypo.criteria.metricId === m.id) {
                 const createCriteriaDataset = (label, value, lineColor) => {
                     return {
                         label: `[Criteria] ${label}`,
@@ -796,20 +826,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                 };
 
-                if (hypo.criteria.success) {
-                    progressChart.data.datasets.push(createCriteriaDataset('Success', hypo.criteria.success.val, '#10b981'));
-                }
-                if (hypo.criteria.pivot) {
-                    progressChart.data.datasets.push(createCriteriaDataset('Pivot', hypo.criteria.pivot.val, '#f59e0b'));
-                }
-                if (hypo.criteria.stop) {
-                    progressChart.data.datasets.push(createCriteriaDataset('Stop', hypo.criteria.stop.val, '#ef4444'));
-                }
+                if (hypo.criteria.success) progressChart.data.datasets.push(createCriteriaDataset('Success', hypo.criteria.success.val, '#10b981'));
+                if (hypo.criteria.pivot) progressChart.data.datasets.push(createCriteriaDataset('Pivot', hypo.criteria.pivot.val, '#f59e0b'));
+                if (hypo.criteria.stop) progressChart.data.datasets.push(createCriteriaDataset('Stop', hypo.criteria.stop.val, '#ef4444'));
             }
         });
 
+        // Update Chart Type
+        progressChart.config.type = currentChartMode === 'bar' ? 'bar' : 'line';
         progressChart.data.labels = labels;
-        // Attach dateMap for click handler
         progressChart.dateMap = dateMap;
         progressChart.update();
 
@@ -828,6 +853,88 @@ document.addEventListener('DOMContentLoaded', () => {
                 resetBtn.classList.add('hidden');
             }
         }
+    }
+
+    // Heatmap / Calendar Renderer
+    function renderCalendarView(hypo, logs, startDate, endDate) {
+        if (!calendarContainer) return;
+        calendarContainer.innerHTML = '';
+
+        // Header (Month Label)
+        const rangeLabel = document.createElement('div');
+        rangeLabel.className = 'calendar-range-label';
+        rangeLabel.textContent = `${startDate.toLocaleDateString('ja-JP')} - ${endDate.toLocaleDateString('ja-JP')}`;
+        calendarContainer.appendChild(rangeLabel);
+
+        const grid = document.createElement('div');
+        grid.className = 'calendar-grid';
+
+        // Weekday Headers
+        const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+        weekdays.forEach(wd => {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-header-cell';
+            cell.textContent = wd;
+            grid.appendChild(cell);
+        });
+
+        // Generate Days
+        // Align start date to Sunday for grid alignment?
+        // Or just list the range? Let's align to week start (Sunday) of the start date.
+        const gridStart = new Date(startDate);
+        gridStart.setDate(gridStart.getDate() - gridStart.getDay()); // Go back to Sunday
+
+        const gridEnd = new Date(endDate);
+        // Ensure we cover till end of week
+        if (gridEnd.getDay() !== 6) {
+            gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));
+        }
+
+        let curr = new Date(gridStart);
+        const MAX_CELLS = 365; // Safety cap
+        let cells = 0;
+
+        while (curr <= gridEnd && cells < MAX_CELLS) {
+            const dStr = curr.getFullYear() + '-' +
+                String(curr.getMonth() + 1).padStart(2, '0') + '-' +
+                String(curr.getDate()).padStart(2, '0');
+
+            const dayLogs = logs.filter(l => l.date === dStr);
+            const totalActivity = dayLogs.length; // Simple count for now
+            // Or sum values? Simple count indicates "Moved forward"
+
+            const cell = document.createElement('div');
+            cell.className = `calendar-cell`;
+
+            // Add Intensity Class
+            if (totalActivity > 0) {
+                let level = 1;
+                if (totalActivity >= 2) level = 2;
+                if (totalActivity >= 4) level = 3;
+                if (totalActivity >= 6) level = 4;
+                cell.classList.add(`bg-level-${level}`);
+                cell.classList.add('has-data');
+            }
+
+            // Highlight Today
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (dStr === todayStr) {
+                cell.classList.add('today');
+            }
+
+            // Tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'calendar-tooltip';
+            tooltip.innerHTML = `${curr.getMonth() + 1}/${curr.getDate()}<br>${totalActivity} Logs`;
+            cell.appendChild(tooltip);
+
+            grid.appendChild(cell);
+
+            curr.setDate(curr.getDate() + 1);
+            cells++;
+        }
+
+        calendarContainer.appendChild(grid);
     }
 
     function computeCumulative(arr) {
