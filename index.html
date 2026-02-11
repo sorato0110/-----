@@ -302,7 +302,18 @@
                     <!-- Chart Section -->
                     <div id="chat-chart-container" class="chat-chart-container">
                         <div class="chart-header-row"
-                            style="display:flex; justify-content:space-between; align-items:center;">
+                            style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 8px;">
+
+                            <!-- View Switcher -->
+                            <div class="chart-view-switcher">
+                                <button class="view-switch-btn active" data-mode="line" title="全体トレンド"><i
+                                        class="fa-solid fa-chart-line"></i></button>
+                                <button class="view-switch-btn" data-mode="bar" title="昨日比（差分）"><i
+                                        class="fa-solid fa-chart-simple"></i></button>
+                                <button class="view-switch-btn" data-mode="calendar" title="継続状況"><i
+                                        class="fa-solid fa-calendar-days"></i></button>
+                            </div>
+
                             <div class="chart-controls" style="flex:1;">
                                 <!-- Dynamic controls injected by script.js -->
                             </div>
@@ -310,8 +321,12 @@
                                 <i class="fa-solid fa-compress"></i>
                             </button>
                         </div>
+
                         <div class="chart-wrapper">
                             <canvas id="progressChart"></canvas>
+                            <div id="calendar-view-container" class="calendar-view-container hidden">
+                                <!-- Calendar Grid Injected Here -->
+                            </div>
                         </div>
                     </div>
 
