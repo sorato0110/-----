@@ -27,6 +27,7 @@
                 </div>
             </div>
             <button class="nav-item active" data-tab="map"><i class="fa-solid fa-border-all"></i> 戦略マップ</button>
+            <button class="nav-item" data-tab="analysis"><i class="fa-solid fa-compass"></i> 自己分析</button>
             <button class="nav-item" data-tab="verification"><i class="fa-solid fa-flask"></i> 仮説検証</button>
             <button class="nav-item" data-tab="confidence"><i class="fa-solid fa-chart-line"></i> 自信度分析</button>
             </nav>
@@ -46,7 +47,7 @@
 
                         <div class="scales-container">
                             <div class="scale-group">
-                                <label>効果</label>
+                                <label>効果 (Impact)</label>
                                 <div class="scale-options" id="impact-scale">
                                     <label class="radio-label"><input type="radio" name="impact"
                                             value="1"><span>1</span></label>
@@ -62,7 +63,7 @@
                             </div>
 
                             <div class="scale-group">
-                                <label>工数</label>
+                                <label>工数 (Cost)</label>
                                 <div class="scale-options" id="cost-scale">
                                     <label class="radio-label"><input type="radio" name="cost"
                                             value="1"><span>1</span></label>
@@ -76,10 +77,34 @@
                                             value="5"><span>5</span></label>
                                 </div>
                             </div>
+
+                            <div class="scale-group">
+                                <label>価値観一致度 (Value)</label>
+                                <div class="scale-options" id="value-scale">
+                                    <label class="radio-label"><input type="radio" name="value"
+                                            value="1"><span>1</span></label>
+                                    <label class="radio-label"><input type="radio" name="value"
+                                            value="2"><span>2</span></label>
+                                    <label class="radio-label"><input type="radio" name="value" value="3"
+                                            checked><span>3</span></label>
+                                    <label class="radio-label"><input type="radio" name="value"
+                                            value="4"><span>4</span></label>
+                                    <label class="radio-label"><input type="radio" name="value"
+                                            value="5"><span>5</span></label>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <textarea id="task-memo" placeholder="メモ (任意)" class="text-input memo-input"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="input-label" style="font-size: 0.8rem;">関連する価値観 (自動提案)</label>
+                            <div id="suggested-values" class="tags-container" style="min-height: 30px;">
+                                <!-- Tags injected via JS -->
+                                <span class="tag-placeholder">自己分析を行うとここに価値観が表示されます</span>
+                            </div>
                         </div>
 
                         <button id="save-btn" class="primary-btn">保存する</button>
@@ -102,7 +127,7 @@
 
                     <!-- Axis Labels -->
                     <div class="axis-label x-axis">工数 (低 → 高)</div>
-                    <div class="axis-label y-axis">効果 (低 → 高)</div>
+                    <div class="axis-label y-axis">効果 + 価値観 (低 → 高)</div>
 
                     <!-- Grid Lines -->
                     <div class="grid-line horizontal"></div>
@@ -118,6 +143,103 @@
                     <h3><i class="fa-solid fa-list-check"></i> 優先度順リスト</h3>
                     <div id="active-list" class="task-list">
                         <!-- Active Tasks -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Self-Analysis View -->
+            <div id="analysis-view" class="view-content hidden">
+                <div class="analysis-container">
+                    <!-- Left Column: Inputs -->
+                    <div class="analysis-column-left">
+                        <!-- Section 1: Unmet Needs -->
+                        <div class="card">
+                            <h2 class="section-title"><i class="fa-solid fa-heart-crack"></i> 満たされない欲求の深掘り</h2>
+                            <p class="text-muted text-sm mb-4">
+                                日々の生活で「もっとこうだったらいいのに」と感じる瞬間や、不満を書き出しましょう。<br>
+                                それはあなたの「核となる欲求」を見つけるヒントです。
+                            </p>
+
+                            <div class="form-group">
+                                <label class="input-label">欲求の種類 (Type)</label>
+                                <select id="need-type" class="text-input">
+                                    <option value="Freedom">自由への欲求 (Freedom)</option>
+                                    <option value="Recognition">承認欲求 (Recognition)</option>
+                                    <option value="Growth">成長欲求 (Growth)</option>
+                                    <option value="Contribution">貢献欲求 (Contribution)</option>
+                                    <option value="Connection">繋がりへの欲求 (Connection)</option>
+                                    <option value="Creation">創造欲求 (Creation)</option>
+                                    <option value="Security">安定への欲求 (Security)</option>
+                                    <option value="Challenge">挑戦への欲求 (Challenge)</option>
+                                    <option value="Other">その他 (Other)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="input-label">不満・渇望の具体的な描写</label>
+                                <textarea id="need-desc" class="text-input memo-input"
+                                    placeholder="例：毎日同じ作業の繰り返しで、自分がロボットのように感じる..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="input-label">強烈度 (Intensity): <span
+                                        id="need-intensity-val">5</span></label>
+                                <input type="range" id="need-intensity" min="1" max="10" value="5" class="slider-input">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="input-label">トリガー (引き金となる出来事)</label>
+                                <input type="text" id="need-trigger" class="text-input" placeholder="例：上司に理不尽な指摘をされた時">
+                            </div>
+
+                            <button id="add-need-btn" class="primary-btn secondary-style">+ 欲求を追加</button>
+
+                            <div id="needs-list" class="mt-4 needs-list">
+                                <!-- Needs items injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Strengths & Values -->
+                        <div class="card mt-8">
+                            <h2 class="section-title"><i class="fa-solid fa-gem"></i> 強み・情熱・価値観</h2>
+
+                            <div class="form-group">
+                                <label class="input-label">最高の強み (Strength)</label>
+                                <textarea id="analysis-strength" class="text-input memo-input"
+                                    placeholder="努力しなくても人よりうまくできること、フロー状態に入れることは？"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="input-label">核となる価値観 (Core Values)</label>
+                                <p class="text-muted text-xs">カンマ区切りで入力 (例: 誠実, ユーモア, 冒険)</p>
+                                <input type="text" id="analysis-values" class="text-input"
+                                    placeholder="あなたの行動指針となるキーワード">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="input-label">ユニークネス (Uniqueness)</label>
+                                <textarea id="analysis-uniqueness" class="text-input memo-input"
+                                    placeholder="あなたにしかできない、代わりの効かない貢献とは？"></textarea>
+                            </div>
+
+                            <button id="save-profile-btn" class="primary-btn">プロファイルを保存</button>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Visualization -->
+                    <div class="analysis-column-right">
+                        <div class="sticky-chart-card card">
+                            <h3 class="chart-title">内なる羅針盤 (Inner Compass)</h3>
+                            <div class="radar-chart-container">
+                                <canvas id="needsRadarChart"></canvas>
+                            </div>
+                            <div class="tags-cloud-container mt-4">
+                                <h4 class="text-sm font-bold mb-2">価値観キーワード</h4>
+                                <div id="values-cloud" class="tags-container">
+                                    <span class="tag-placeholder">価値観を入力するとここに表示されます</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

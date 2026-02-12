@@ -6,6 +6,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let experimentLogs = JSON.parse(localStorage.getItem('bayesLogs')) || [];
     let dailyLogs = JSON.parse(localStorage.getItem('bayesDailyLogs')) || [];
 
+    // Self-Analysis Data
+    let selfAnalysis = JSON.parse(localStorage.getItem('bayesSelfAnalysis')) || {
+        needs: [],
+        profile: {
+            strength: '',
+            values: [],
+            uniqueness: ''
+        }
+    };
+
     // Global Migration: Migrate all hypotheses to have 'metrics' array
     function migrateAllHypotheses() {
         let changed = false;
@@ -137,13 +147,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const impact = parseInt(document.querySelector('input[name="impact"]:checked').value);
         const cost = parseInt(document.querySelector('input[name="cost"]:checked').value);
+        const valueScore = parseInt(document.querySelector('input[name="value"]:checked').value);
         const memo = memoInput.value.trim();
+
+        // Get selected values tags
+        const relatedValues = [];
+        document.querySelectorAll('#suggested-values .value-tag.selected').forEach(el => {
+            relatedValues.push(el.textContent);
+        });
 
         const newTask = {
             id: Date.now().toString(),
             title,
             impact,
             cost,
+            valueScore,
+            relatedValues,
             memo,
             excluded: false,
             createdAt: new Date().toISOString()
@@ -1294,6 +1313,14 @@ document.addEventListener('DOMContentLoaded', () => {
         memoInput.value = '';
         document.querySelector('input[name="impact"][value="3"]').checked = true;
         document.querySelector('input[name="cost"][value="3"]').checked = true;
+
+        const valDefault = document.querySelector('input[name="value"][value="3"]');
+        if (valDefault) valDefault.checked = true;
+
+        // Reset Tags
+        document.querySelectorAll('#suggested-values .value-tag.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
     }
 
     function resetHypoForm() {
@@ -1372,11 +1399,21 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMetricInputs();
     }
 
+    function getSortedActiveTasks() {
+        return tasks.filter(t => !t.excluded).sort((a, b) => {
+            const valA = (a.valueScore || 3);
+            const valB = (b.valueScore || 3);
+            const scoreA = (a.impact || 0) + valA - (a.cost || 0);
+            const scoreB = (b.impact || 0) + valB - (b.cost || 0);
+            return scoreB - scoreA;
+        });
+    }
+
     function renderMatrix() {
         matrixContainer.innerHTML = '';
-        const activeTasks = tasks.filter(t => !t.excluded);
+        const activeTasks = getSortedActiveTasks();
 
-        activeTasks.forEach(task => {
+        activeTasks.forEach((task, index) => {
             const item = document.createElement('div');
             item.className = 'matrix-item';
 
@@ -1390,16 +1427,17 @@ document.addEventListener('DOMContentLoaded', () => {
             item.style.left = `${leftPct + jitterX}%`;
             item.style.bottom = `${bottomPct + jitterY}%`;
 
+            const valScore = task.valueScore || 3;
             item.innerHTML = `
-                <div class="pin">${getIndex(task)}</div>
+                <div class="pin">${index + 1}</div>
                 <div class="pin-tooltip">
                     <strong>${task.title}</strong><br>
-                    Cost: ${task.cost}, Impact: ${task.impact}
+                    Cost: ${task.cost}, Impact: ${task.impact}, Value: ${valScore}
                 </div>
             `;
 
             item.addEventListener('click', () => {
-                alert(`詳細:\nタイトル: ${task.title}\nメモ: ${task.memo || 'なし'}`);
+                alert(`詳細:\nタイトル: ${task.title}\nメモ: ${task.memo || 'なし'}\n価値観: ${task.relatedValues ? task.relatedValues.join(', ') : 'なし'}`);
             });
 
             matrixContainer.appendChild(item);
@@ -1407,14 +1445,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getIndex(task) {
-        const activeTasks = tasks.filter(t => !t.excluded);
+        const activeTasks = getSortedActiveTasks();
         return activeTasks.indexOf(task) + 1;
     }
 
     function renderLists() {
         activeList.innerHTML = '';
 
-        const activeTasks = tasks.filter(t => !t.excluded);
+        const activeTasks = getSortedActiveTasks();
 
         if (activeTasks.length === 0) {
             activeList.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">タスクがありません</p>';
@@ -1439,7 +1477,11 @@ document.addEventListener('DOMContentLoaded', () => {
         div.innerHTML = `
             <div class="task-info">
                 <h4><span style="color:var(--primary); font-weight:bold; margin-right:8px;">#${index}</span> ${task.title} ${badgeHtml}</h4>
-                <div class="task-meta">効果: ${task.impact} / 工数: ${task.cost} ${task.memo ? ' | 📝' : ''}</div>
+                <div class="task-meta">
+                    <span style="margin-right:8px;">効果: ${task.impact} / 工数: ${task.cost}</span>
+                    ${task.valueScore ? `<span style="color:#2563eb; font-weight:bold;">価値観: ${task.valueScore}</span>` : ''}
+                    ${task.memo ? ' | 📝' : ''}
+                </div>
             </div>
             <div class="task-actions">
                 <button class="icon-text-btn" onclick="openClarificationSheet('${task.id}')" title="明確化" style="margin-right:4px;">
@@ -2322,6 +2364,219 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // (Moved to custom logic earlier in file by user)
     // --- FAB Drag & Snap & Peek Implementation Removed to avoid conflict ---
+
+    // --- Self-Analysis Logic ---
+    const needTypeInput = document.getElementById('need-type');
+    const needDescInput = document.getElementById('need-desc');
+    const needIntensityInput = document.getElementById('need-intensity');
+    const needIntensityVal = document.getElementById('need-intensity-val');
+    const needTriggerInput = document.getElementById('need-trigger');
+    const addNeedBtn = document.getElementById('add-need-btn');
+    const needsList = document.getElementById('needs-list');
+
+    const analysisStrengthInput = document.getElementById('analysis-strength');
+    const analysisValuesInput = document.getElementById('analysis-values');
+    const analysisUniquenessInput = document.getElementById('analysis-uniqueness');
+    const saveProfileBtn = document.getElementById('save-profile-btn');
+
+    const valuesCloud = document.getElementById('values-cloud');
+    const suggestedValuesContainer = document.getElementById('suggested-values');
+    let radarChart = null;
+
+    // Init Inputs
+    if (selfAnalysis.profile) {
+        if (analysisStrengthInput) analysisStrengthInput.value = selfAnalysis.profile.strength || '';
+        if (analysisValuesInput) analysisValuesInput.value = (selfAnalysis.profile.values || []).join(', ');
+        if (analysisUniquenessInput) analysisUniquenessInput.value = selfAnalysis.profile.uniqueness || '';
+    }
+
+    // Slider
+    if (needIntensityInput) {
+        needIntensityInput.addEventListener('input', (e) => {
+            if (needIntensityVal) needIntensityVal.textContent = e.target.value;
+        });
+    }
+
+    // Save Profile
+    if (saveProfileBtn) {
+        saveProfileBtn.addEventListener('click', () => {
+            const valuesStr = analysisValuesInput.value.trim();
+            const values = valuesStr ? valuesStr.split(',').map(s => s.trim()).filter(s => s) : [];
+
+            selfAnalysis.profile = {
+                strength: analysisStrengthInput.value.trim(),
+                values: values,
+                uniqueness: analysisUniquenessInput.value.trim()
+            };
+            saveSelfAnalysis();
+            renderAnalysisView();
+            alert('プロファイルを保存しました');
+        });
+    }
+
+    // Add Need
+    if (addNeedBtn) {
+        addNeedBtn.addEventListener('click', () => {
+            const type = needTypeInput.value;
+            const desc = needDescInput.value.trim();
+            const intensity = parseInt(needIntensityInput.value);
+            const trigger = needTriggerInput.value.trim();
+
+            if (!desc) {
+                alert('不満・渇望の具体的な描写は必須です');
+                return;
+            }
+
+            const newNeed = {
+                id: Date.now().toString(),
+                type,
+                desc,
+                intensity,
+                trigger
+            };
+
+            selfAnalysis.needs.push(newNeed);
+            saveSelfAnalysis();
+            renderAnalysisView();
+
+            // Reset form
+            needDescInput.value = '';
+            needTriggerInput.value = '';
+            needIntensityInput.value = 5;
+            if (needIntensityVal) needIntensityVal.textContent = '5';
+        });
+    }
+
+    function saveSelfAnalysis() {
+        localStorage.setItem('bayesSelfAnalysis', JSON.stringify(selfAnalysis));
+        renderSuggestedValues(); // Update Map View tags
+    }
+
+    function renderAnalysisView() {
+        // Render Needs List
+        if (needsList) {
+            needsList.innerHTML = '';
+            selfAnalysis.needs.forEach(need => {
+                const div = document.createElement('div');
+                div.className = 'need-item';
+                div.innerHTML = `
+                <div class="need-header">
+                    <span class="need-type">${need.type}</span>
+                    <div class="need-intensity-badge" style="background: rgba(239, 68, 68, ${need.intensity / 10})">
+                        ${need.intensity}
+                    </div>
+                </div>
+                <div class="need-desc">${need.desc}</div>
+                ${need.trigger ? `<div class="need-trigger"><i class="fa-solid fa-bolt"></i> ${need.trigger}</div>` : ''}
+                <button class="delete-need-btn" onclick="deleteNeed('${need.id}')"><i class="fa-solid fa-times"></i></button>
+             `;
+                needsList.appendChild(div);
+            });
+        }
+
+        // Delete Handler Global
+        window.deleteNeed = (id) => {
+            if (confirm('削除しますか？')) {
+                selfAnalysis.needs = selfAnalysis.needs.filter(n => n.id !== id);
+                saveSelfAnalysis();
+                renderAnalysisView();
+            }
+        };
+
+        // Render Values Cloud
+        if (valuesCloud) {
+            valuesCloud.innerHTML = '';
+            const values = selfAnalysis.profile.values || [];
+            if (values.length === 0) {
+                valuesCloud.innerHTML = '<span class="tag-placeholder">価値観を入力するとここに表示されます</span>';
+            } else {
+                values.forEach(v => {
+                    const tag = document.createElement('span');
+                    tag.className = 'value-tag';
+                    tag.textContent = v;
+                    valuesCloud.appendChild(tag);
+                });
+            }
+        }
+
+        updateRadarChart();
+    }
+
+    function updateRadarChart() {
+        const ctx = document.getElementById('needsRadarChart');
+        if (!ctx) return;
+
+        // Aggregate Needs by Type (Max Intensity per Type)
+        const types = ['Freedom', 'Recognition', 'Growth', 'Contribution', 'Connection', 'Creation', 'Security', 'Challenge'];
+        const dataMap = {};
+        types.forEach(t => dataMap[t] = 0);
+
+        selfAnalysis.needs.forEach(n => {
+            if (dataMap[n.type] !== undefined) {
+                if (n.intensity > dataMap[n.type]) {
+                    dataMap[n.type] = n.intensity;
+                }
+            }
+        });
+
+        const dataValues = types.map(t => dataMap[t]);
+
+        if (radarChart) {
+            radarChart.data.datasets[0].data = dataValues;
+            radarChart.update();
+        } else {
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: types,
+                    datasets: [{
+                        label: '欲求不満度 (Intensity)',
+                        data: dataValues,
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 10,
+                            ticks: {
+                                stepSize: 2
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function renderSuggestedValues() {
+        if (!suggestedValuesContainer) return;
+        suggestedValuesContainer.innerHTML = '';
+        const values = selfAnalysis.profile.values || [];
+
+        if (values.length === 0) {
+            suggestedValuesContainer.innerHTML = '<span class="tag-placeholder">自己分析を行うとここに価値観が表示されます</span>';
+            return;
+        }
+
+        values.forEach(v => {
+            const tag = document.createElement('span');
+            tag.className = 'value-tag';
+            tag.textContent = v;
+            tag.addEventListener('click', () => {
+                tag.classList.toggle('selected');
+            });
+            suggestedValuesContainer.appendChild(tag);
+        });
+    }
+
+    // Initial Render call
+    renderAnalysisView();
+    renderSuggestedValues();
 
 });
 
