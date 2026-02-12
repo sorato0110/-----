@@ -131,10 +131,35 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetView = document.getElementById(`${tabName}-view`);
             if (targetView) {
                 targetView.classList.remove('hidden');
-            } else if (tabName === 'guide' && guideSection) {
-                guideSection.classList.toggle('hidden');
+                // Trigger render if needed
+                if (tabName === 'map') render();
             }
         });
+    });
+
+    // --- Dashboard & Modal Logic ---
+    const editAnalysisBtn = document.getElementById('edit-analysis-btn');
+    const analysisModal = document.getElementById('analysis-modal');
+    const closeAnalysisModalBtn = document.getElementById('close-analysis-modal');
+
+    if (editAnalysisBtn) {
+        editAnalysisBtn.addEventListener('click', () => {
+            analysisModal.classList.remove('hidden');
+            renderAnalysisView(); // Ensure updated
+        });
+    }
+
+    if (closeAnalysisModalBtn) {
+        closeAnalysisModalBtn.addEventListener('click', () => {
+            analysisModal.classList.add('hidden');
+        });
+    }
+
+    // Close modal on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target === analysisModal) {
+            analysisModal.classList.add('hidden');
+        }
     });
 
     // Save Task
@@ -2356,6 +2381,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial Render
     render();
+    renderAnalysisView(); // Init Sidebar
 
     // Show guide if no tasks
     if (tasks.length === 0 && guideSection) {

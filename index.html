@@ -27,7 +27,6 @@
                 </div>
             </div>
             <button class="nav-item active" data-tab="map"><i class="fa-solid fa-border-all"></i> 戦略マップ</button>
-            <button class="nav-item" data-tab="analysis"><i class="fa-solid fa-compass"></i> 自己分析</button>
             <button class="nav-item" data-tab="verification"><i class="fa-solid fa-flask"></i> 仮説検証</button>
             <button class="nav-item" data-tab="confidence"><i class="fa-solid fa-chart-line"></i> 自信度分析</button>
             </nav>
@@ -35,126 +34,157 @@
 
         <main class="main-content">
 
-            <!-- Map View -->
+            <!-- Map View (Merged Dashboard) -->
             <div id="map-view" class="view-content active">
-                <!-- Input Section -->
-                <section class="input-section">
-                    <div class="card input-card">
-                        <div class="form-group">
-                            <input type="text" id="task-title" placeholder="タイトル (例: 新機能LP作成)"
-                                class="text-input big-input">
+                <div class="dashboard-container">
+                    <!-- Main Area: Strategy Map -->
+                    <div class="dashboard-main">
+                        <!-- Input Section -->
+                        <section class="input-section">
+                            <div class="card input-card">
+                                <div class="form-group">
+                                    <input type="text" id="task-title" placeholder="タイトル (例: 新機能LP作成)"
+                                        class="text-input big-input">
+                                </div>
+
+                                <div class="scales-container">
+                                    <div class="scale-group">
+                                        <label>効果 (Impact)</label>
+                                        <div class="scale-options" id="impact-scale">
+                                            <label class="radio-label"><input type="radio" name="impact"
+                                                    value="1"><span>1</span></label>
+                                            <label class="radio-label"><input type="radio" name="impact"
+                                                    value="2"><span>2</span></label>
+                                            <label class="radio-label"><input type="radio" name="impact" value="3"
+                                                    checked><span>3</span></label>
+                                            <label class="radio-label"><input type="radio" name="impact"
+                                                    value="4"><span>4</span></label>
+                                            <label class="radio-label"><input type="radio" name="impact"
+                                                    value="5"><span>5</span></label>
+                                        </div>
+                                    </div>
+
+                                    <div class="scale-group">
+                                        <label>工数 (Cost)</label>
+                                        <div class="scale-options" id="cost-scale">
+                                            <label class="radio-label"><input type="radio" name="cost"
+                                                    value="1"><span>1</span></label>
+                                            <label class="radio-label"><input type="radio" name="cost"
+                                                    value="2"><span>2</span></label>
+                                            <label class="radio-label"><input type="radio" name="cost" value="3"
+                                                    checked><span>3</span></label>
+                                            <label class="radio-label"><input type="radio" name="cost"
+                                                    value="4"><span>4</span></label>
+                                            <label class="radio-label"><input type="radio" name="cost"
+                                                    value="5"><span>5</span></label>
+                                        </div>
+                                    </div>
+
+                                    <div class="scale-group">
+                                        <label>価値観一致度 (Value)</label>
+                                        <div class="scale-options" id="value-scale">
+                                            <label class="radio-label"><input type="radio" name="value"
+                                                    value="1"><span>1</span></label>
+                                            <label class="radio-label"><input type="radio" name="value"
+                                                    value="2"><span>2</span></label>
+                                            <label class="radio-label"><input type="radio" name="value" value="3"
+                                                    checked><span>3</span></label>
+                                            <label class="radio-label"><input type="radio" name="value"
+                                                    value="4"><span>4</span></label>
+                                            <label class="radio-label"><input type="radio" name="value"
+                                                    value="5"><span>5</span></label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <textarea id="task-memo" placeholder="メモ (任意)"
+                                        class="text-input memo-input"></textarea>
+                                </div>
+
+                                <div class="form-group" id="suggested-values-container">
+                                    <label class="input-label text-xs text-muted">Suggested Values (from
+                                        Analysis)</label>
+                                    <div id="suggested-values" class="tags-container"></div>
+                                </div>
+
+                                <button id="save-btn" class="primary-btn">保存 / 追加</button>
+                            </div>
+                        </section>
+
+                        <!-- Matrix & Lists -->
+                        <div id="matrix-container" class="matrix-container mb-8">
+                            <!-- Matrix Items injected here -->
+                            <div class="quadrant q-nw">
+                                <span class="q-label">高効果 / 低工数 (即実行)</span>
+                            </div>
+                            <div class="quadrant q-ne">
+                                <span class="q-label">高効果 / 高工数 (計画的)</span>
+                            </div>
+                            <div class="quadrant q-sw">
+                                <span class="q-label">低効果 / 低工数 (後回し)</span>
+                            </div>
+                            <div class="quadrant q-se">
+                                <span class="q-label">低効果 / 高工数 (除外候補)</span>
+                            </div>
+
+                            <!-- Axis Labels -->
+                            <div class="axis-label x-axis">工数 (低 → 高)</div>
+                            <div class="axis-label y-axis">効果 + 価値観 (低 → 高)</div>
+
+                            <!-- Grid Lines -->
+                            <div class="grid-line horizontal"></div>
+                            <div class="grid-line vertical"></div>
+
+                            <!-- Items Container -->
+                            <div id="matrix-items" class="matrix-items-layer">
+                                <!-- Items will be injected here -->
+                            </div>
                         </div>
 
-                        <div class="scales-container">
-                            <div class="scale-group">
-                                <label>効果 (Impact)</label>
-                                <div class="scale-options" id="impact-scale">
-                                    <label class="radio-label"><input type="radio" name="impact"
-                                            value="1"><span>1</span></label>
-                                    <label class="radio-label"><input type="radio" name="impact"
-                                            value="2"><span>2</span></label>
-                                    <label class="radio-label"><input type="radio" name="impact" value="3"
-                                            checked><span>3</span></label>
-                                    <label class="radio-label"><input type="radio" name="impact"
-                                            value="4"><span>4</span></label>
-                                    <label class="radio-label"><input type="radio" name="impact"
-                                            value="5"><span>5</span></label>
+                        <!-- List View -->
+                        <div class="lists-wrapper">
+                            <div class="list-column list-section">
+                                <h3>Active Tasks <span style="font-size:0.8rem; font-weight:normal;">(優先順)</span></h3>
+                                <div id="active-list" class="task-list">
+                                    <!-- Active Tasks -->
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="scale-group">
-                                <label>工数 (Cost)</label>
-                                <div class="scale-options" id="cost-scale">
-                                    <label class="radio-label"><input type="radio" name="cost"
-                                            value="1"><span>1</span></label>
-                                    <label class="radio-label"><input type="radio" name="cost"
-                                            value="2"><span>2</span></label>
-                                    <label class="radio-label"><input type="radio" name="cost" value="3"
-                                            checked><span>3</span></label>
-                                    <label class="radio-label"><input type="radio" name="cost"
-                                            value="4"><span>4</span></label>
-                                    <label class="radio-label"><input type="radio" name="cost"
-                                            value="5"><span>5</span></label>
-                                </div>
+                    <!-- Sidebar: Self-Analysis Cockpit -->
+                    <div class="dashboard-sidebar">
+                        <div class="card sidebar-card">
+                            <h3 class="sidebar-title">Inner Compass <button id="edit-analysis-btn"
+                                    class="icon-btn-small"><i class="fa-solid fa-pen"></i></button></h3>
+
+                            <div class="chart-mini-container">
+                                <canvas id="needsRadarChart"></canvas>
                             </div>
 
-                            <div class="scale-group">
-                                <label>価値観一致度 (Value)</label>
-                                <div class="scale-options" id="value-scale">
-                                    <label class="radio-label"><input type="radio" name="value"
-                                            value="1"><span>1</span></label>
-                                    <label class="radio-label"><input type="radio" name="value"
-                                            value="2"><span>2</span></label>
-                                    <label class="radio-label"><input type="radio" name="value" value="3"
-                                            checked><span>3</span></label>
-                                    <label class="radio-label"><input type="radio" name="value"
-                                            value="4"><span>4</span></label>
-                                    <label class="radio-label"><input type="radio" name="value"
-                                            value="5"><span>5</span></label>
+                            <div class="sidebar-section mt-4">
+                                <h4 class="text-xs font-bold mb-2">My Core Values</h4>
+                                <div id="values-cloud" class="tags-container">
+                                    <span class="tag-placeholder">価値観を入力するとここに表示されます</span>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="form-group">
-                            <textarea id="task-memo" placeholder="メモ (任意)" class="text-input memo-input"></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="input-label" style="font-size: 0.8rem;">関連する価値観 (自動提案)</label>
-                            <div id="suggested-values" class="tags-container" style="min-height: 30px;">
-                                <!-- Tags injected via JS -->
-                                <span class="tag-placeholder">自己分析を行うとここに価値観が表示されます</span>
-                            </div>
-                        </div>
-
-                        <button id="save-btn" class="primary-btn">保存する</button>
-                    </div>
-                </section>
-
-                <div class="matrix-container">
-                    <div class="quadrant q-nw">
-                        <span class="q-label">高効果 / 低工数 (即実行)</span>
-                    </div>
-                    <div class="quadrant q-ne">
-                        <span class="q-label">高効果 / 高工数 (計画的)</span>
-                    </div>
-                    <div class="quadrant q-sw">
-                        <span class="q-label">低効果 / 低工数 (後回し)</span>
-                    </div>
-                    <div class="quadrant q-se">
-                        <span class="q-label">低効果 / 高工数 (除外候補)</span>
-                    </div>
-
-                    <!-- Axis Labels -->
-                    <div class="axis-label x-axis">工数 (低 → 高)</div>
-                    <div class="axis-label y-axis">効果 + 価値観 (低 → 高)</div>
-
-                    <!-- Grid Lines -->
-                    <div class="grid-line horizontal"></div>
-                    <div class="grid-line vertical"></div>
-
-                    <!-- Items Container -->
-                    <div id="matrix-items" class="matrix-items-layer">
-                        <!-- Items will be injected here -->
-                    </div>
-                </div>
-
-                <div class="list-section mt-8">
-                    <h3><i class="fa-solid fa-list-check"></i> 優先度順リスト</h3>
-                    <div id="active-list" class="task-list">
-                        <!-- Active Tasks -->
                     </div>
                 </div>
             </div>
 
-            <!-- Self-Analysis View -->
-            <div id="analysis-view" class="view-content hidden">
-                <div class="analysis-container">
-                    <!-- Left Column: Inputs -->
-                    <div class="analysis-column-left">
+            <!-- Analysis Modal (Hidden by default) -->
+            <div id="analysis-modal" class="modal-overlay hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>自己分析 (Deep Dive)</h2>
+                        <button id="close-analysis-modal" class="icon-btn"><i class="fa-solid fa-times"></i></button>
+                    </div>
+                    <div class="modal-body">
                         <!-- Section 1: Unmet Needs -->
-                        <div class="card">
-                            <h2 class="section-title"><i class="fa-solid fa-heart-crack"></i> 満たされない欲求の深掘り</h2>
+                        <div class="card-flat">
+                            <h3 class="section-title-sm"><i class="fa-solid fa-heart-crack"></i> 満たされない欲求</h3>
                             <p class="text-muted text-sm mb-4">
                                 日々の生活で「もっとこうだったらいいのに」と感じる瞬間や、不満を書き出しましょう。<br>
                                 それはあなたの「核となる欲求」を見つけるヒントです。
@@ -163,14 +193,14 @@
                             <div class="form-group">
                                 <label class="input-label">欲求の種類 (Type)</label>
                                 <select id="need-type" class="text-input">
-                                    <option value="Freedom">自由への欲求 (Freedom)</option>
-                                    <option value="Recognition">承認欲求 (Recognition)</option>
-                                    <option value="Growth">成長欲求 (Growth)</option>
-                                    <option value="Contribution">貢献欲求 (Contribution)</option>
-                                    <option value="Connection">繋がりへの欲求 (Connection)</option>
-                                    <option value="Creation">創造欲求 (Creation)</option>
-                                    <option value="Security">安定への欲求 (Security)</option>
-                                    <option value="Challenge">挑戦への欲求 (Challenge)</option>
+                                    <option value="Freedom">自由 (Freedom)</option>
+                                    <option value="Recognition">承認 (Recognition)</option>
+                                    <option value="Growth">成長 (Growth)</option>
+                                    <option value="Contribution">貢献 (Contribution)</option>
+                                    <option value="Connection">繋がり (Connection)</option>
+                                    <option value="Creation">創造 (Creation)</option>
+                                    <option value="Security">安定 (Security)</option>
+                                    <option value="Challenge">挑戦 (Challenge)</option>
                                     <option value="Other">その他 (Other)</option>
                                 </select>
                             </div>
@@ -199,10 +229,9 @@
                             </div>
                         </div>
 
-                        <!-- Section 2: Strengths & Values -->
-                        <div class="card mt-8">
-                            <h2 class="section-title"><i class="fa-solid fa-gem"></i> 強み・情熱・価値観</h2>
-
+                        <!-- Section 2: Profile -->
+                        <div class="card-flat mt-4">
+                            <h3 class="section-title-sm"><i class="fa-solid fa-gem"></i> プロファイル</h3>
                             <div class="form-group">
                                 <label class="input-label">最高の強み (Strength)</label>
                                 <textarea id="analysis-strength" class="text-input memo-input"
@@ -225,24 +254,10 @@
                             <button id="save-profile-btn" class="primary-btn">プロファイルを保存</button>
                         </div>
                     </div>
-
-                    <!-- Right Column: Visualization -->
-                    <div class="analysis-column-right">
-                        <div class="sticky-chart-card card">
-                            <h3 class="chart-title">内なる羅針盤 (Inner Compass)</h3>
-                            <div class="radar-chart-container">
-                                <canvas id="needsRadarChart"></canvas>
-                            </div>
-                            <div class="tags-cloud-container mt-4">
-                                <h4 class="text-sm font-bold mb-2">価値観キーワード</h4>
-                                <div id="values-cloud" class="tags-container">
-                                    <span class="tag-placeholder">価値観を入力するとここに表示されます</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
+
+
 
             <!-- Verification View -->
             <div id="verification-view" class="view-content hidden">
