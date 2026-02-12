@@ -298,8 +298,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 end: logEndDate.value,
                 metrics: metricsData,
                 memo: logMemo.value,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                valuesDiscovery: []
             };
+
+            // Handle Value Discovery
+            const logValuesDiscovery = document.getElementById('log-values-discovery');
+            if (logValuesDiscovery) {
+                const newValues = logValuesDiscovery.value.split(',').map(v => v.trim()).filter(v => v);
+                if (newValues.length > 0) {
+                    newLog.valuesDiscovery = newValues;
+
+                    // Add to Profile (if unique)
+                    if (!selfAnalysis.profile.values) selfAnalysis.profile.values = [];
+                    let addedCount = 0;
+                    newValues.forEach(nv => {
+                        if (!selfAnalysis.profile.values.includes(nv)) {
+                            selfAnalysis.profile.values.push(nv);
+                            addedCount++;
+                        }
+                    });
+
+                    if (addedCount > 0) {
+                        saveSelfAnalysis();
+                        renderAnalysisView(); // Update Sidebar immediately
+                        alert(`${addedCount}個の新しい価値観をプロファイルに追加しました！`);
+                    }
+                }
+            }
 
             experimentLogs.unshift(newLog); // Newest first
             saveLogs();
@@ -1089,6 +1115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             bubble.innerHTML = `
                 <button class="edit-bubble-btn" onclick="startEditLog('${log.id}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="delete-bubble-btn" onclick="deleteDailyLog('${log.id}')"><i class="fa-solid fa-trash"></i></button>
                 ${metricsHtml ? `<div class="chat-bubble-metrics">${metricsHtml}</div>` : ''}
                 <div class="chat-bubble-memo">${log.memo || ''}</div>
                 <div style="font-size:0.65rem; color:#cbd5e1; text-align:right; margin-top:4px;">${new Date(log.createdAt || Date.now()).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</div>
@@ -1107,6 +1134,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Expose for onclick
+    window.deleteDailyLog = (logId) => {
+        if (!confirm('このログを削除しますか？')) return;
+
+        dailyLogs = dailyLogs.filter(l => l.id !== logId);
+        saveDailyLogs();
+        renderChatTimeline();
+        if (currentHypoForChat) updateChart(currentHypoForChat);
+    };
+
     window.startEditLog = (logId) => {
         const log = dailyLogs.find(l => l.id === logId);
         if (!log) return;
@@ -1364,6 +1400,8 @@ document.addEventListener('DOMContentLoaded', () => {
         logReaction.value = '';
         logConversion.value = '';
         logMemo.value = '';
+        const logValuesDiscovery = document.getElementById('log-values-discovery');
+        if (logValuesDiscovery) logValuesDiscovery.value = '';
     }
 
     function renderMetricInputs() {

@@ -2280,6 +2280,41 @@ body {
         opacity: 0.5;
         background: rgba(255, 255, 255, 0.9);
     }
+
+    .delete-bubble-btn {
+        opacity: 0.5;
+        background: rgba(255, 255, 255, 0.9);
+    }
+}
+
+.delete-bubble-btn {
+    position: absolute;
+    top: 4px;
+    right: 32px;
+    /* Left of edit button */
+    background: rgba(255, 255, 255, 0.7);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-size: 0.7rem;
+}
+
+.delete-bubble-btn:hover {
+    color: #ef4444;
+    /* Red for delete */
+    background: rgba(255, 230, 230, 0.9);
+}
+
+.chat-bubble:hover .delete-bubble-btn {
+    opacity: 1;
 }
 
 .editing-bubble {
