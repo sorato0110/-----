@@ -265,10 +265,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Quick Log FAB Logic (Draggable)
+    // Quick Log FAB Logic (Draggable - Immediate)
     if (fabQuickLog && quickLogPanel) {
         let isDragging = false;
-        let isLongPress = false;
-        let longPressTimer = null;
+        let isClickBlocked = false;
         let startX, startY;
         let initialRight, initialBottom;
         const FAB_CONTAINER_ID = 'fab-container';
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Click Handler (Prevent if dragged)
         const handleClick = (e) => {
-            if (isDragging || isLongPress) {
+            if (isDragging || isClickBlocked) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 e.stopPropagation();
@@ -298,10 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // We bind 'click' to the button, but we must handle conflict.
-        // Actually best to bind to container or handle logic in pointerup.
-        // Existing code had: fabQuickLog.addEventListener('click', ...)
-        // We replace it.
         fabQuickLog.removeEventListener('click', handleClick); // Safety removal if prev exists
         fabQuickLog.addEventListener('click', handleClick);
 
@@ -313,49 +309,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 startX = e.clientX;
                 startY = e.clientY;
                 isDragging = false;
-                isLongPress = false;
+                isClickBlocked = false;
 
                 // visual feedback prep
-                fabContainer.style.transition = 'transform 0.3s cubic-bezier(0.2, 0, 0.2, 1)';
+                fabContainer.style.transition = 'none'; // Disable transition for direct tracking
+                fabContainer.setPointerCapture(e.pointerId);
 
-                longPressTimer = setTimeout(() => {
-                    isLongPress = true;
-                    isDragging = true;
+                // Get current styles for relative drag
+                const rect = fabContainer.getBoundingClientRect();
+                const winW = window.innerWidth;
+                const winH = window.innerHeight;
 
-                    // Visual Feedback
-                    fabContainer.classList.add('is-dragging');
-                    navigator.vibrate && navigator.vibrate(30); // Haptic
-
-                    // Get current styles for relative drag
-                    const rect = fabContainer.getBoundingClientRect();
-                    // We calculate offsets based on right/bottom logic or switch to left/top?
-                    // Let's stick to modifying right/bottom as it is fixed positioned
-                    // But standard drag usually easier with left/top. 
-                    // Let's calculate current Right/Bottom pixels
-                    const winW = window.innerWidth;
-                    const winH = window.innerHeight;
-
-                    // Initial Right/Bottom
-                    initialRight = winW - rect.right;
-                    initialBottom = winH - rect.bottom;
-
-                }, 400); // 400ms threshold
+                // Initial Right/Bottom
+                initialRight = winW - rect.right;
+                initialBottom = winH - rect.bottom;
             });
 
-            window.addEventListener('pointermove', (e) => {
-                if (!longPressTimer && !isDragging) return;
+            fabContainer.addEventListener('pointermove', (e) => {
+                if (!fabContainer.hasPointerCapture(e.pointerId)) return;
 
                 const diffX = Math.abs(e.clientX - startX);
                 const diffY = Math.abs(e.clientY - startY);
 
                 if (!isDragging) {
-                    // Check threshold to cancel long press
+                    // Check threshold to start drag
                     if (diffX > 6 || diffY > 6) {
-                        clearTimeout(longPressTimer);
-                        longPressTimer = null;
+                        isDragging = true;
+                        fabContainer.classList.add('is-dragging');
                     }
-                } else {
-                    // Dragging
+                }
+
+                if (isDragging) {
                     e.preventDefault(); // Stop Scroll
 
                     const deltaX = startX - e.clientX; // moved left -> positive delta for Right
@@ -366,26 +350,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Clamp
                     // Safety margins (approx 10px from edge)
-                    // newRight min: 10, max: window.innerWidth - 70
                     newRight = Math.max(16, Math.min(newRight, window.innerWidth - 80));
                     newBottom = Math.max(16, Math.min(newBottom, window.innerHeight - 80));
 
                     fabContainer.style.right = `${newRight}px`;
                     fabContainer.style.bottom = `${newBottom}px`;
-
-                    // Mobile Adjust (Touch Action) - Handled by CSS class .is-dragging
                 }
             });
 
-            window.addEventListener('pointerup', (e) => {
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
+            fabContainer.addEventListener('pointerup', (e) => {
+                fabContainer.releasePointerCapture(e.pointerId);
 
                 if (isDragging) {
                     isDragging = false;
+                    isClickBlocked = true;
                     fabContainer.classList.remove('is-dragging');
+                    fabContainer.style.transition = '';
 
                     // Save Position
                     const style = window.getComputedStyle(fabContainer);
@@ -395,20 +375,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     }));
 
                     // Prevent Click trigger loop
-                    // The 'click' event fires after pointerup. 
-                    // Our handleClick checks isDragging or isLongPress.
-                    // We need to keep isLongPress true for a moment to block the click
                     setTimeout(() => {
-                        isLongPress = false;
+                        isClickBlocked = false;
                     }, 50);
                 }
             });
 
-            window.addEventListener('pointercancel', (e) => {
-                if (longPressTimer) clearTimeout(longPressTimer);
+            fabContainer.addEventListener('pointercancel', (e) => {
                 isDragging = false;
-                isLongPress = false;
+                isClickBlocked = false;
                 fabContainer.classList.remove('is-dragging');
+                fabContainer.style.transition = '';
+                fabContainer.releasePointerCapture(e.pointerId);
             });
         }
 
