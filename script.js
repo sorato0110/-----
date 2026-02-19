@@ -16,34 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Global Migration: Migrate all hypotheses to have 'metrics' array
-    function migrateAllHypotheses() {
-        let changed = false;
-        hypotheses.forEach(h => {
-            if (!h.metrics || h.metrics.length === 0) {
-                // Try from old fields
-                if (h.goalReach || h.goalReaction || h.goalResult) {
-                    h.metrics = [];
-                    if (h.goalReach) h.metrics.push({ id: 'm-' + Date.now() + Math.random(), label: 'Reach', target: h.goalReach });
-                    if (h.goalReaction) h.metrics.push({ id: 'm-' + Date.now() + Math.random(), label: 'Reaction', target: h.goalReaction });
-                    if (h.goalResult) h.metrics.push({ id: 'm-' + Date.now() + Math.random(), label: 'Result', target: h.goalResult });
-                } else {
-                    // Defaults
-                    h.metrics = [
-                        { id: 'def-' + Date.now() + '-1' + Math.random(), label: 'Reach', target: 0 },
-                        { id: 'def-' + Date.now() + '-2' + Math.random(), label: 'Reaction', target: 0 },
-                        { id: 'def-' + Date.now() + '-3' + Math.random(), label: 'Result', target: 0 }
-                    ];
-                }
-                changed = true;
-            }
-        });
-        if (changed) {
-            localStorage.setItem('bayesHypotheses', JSON.stringify(hypotheses));
-            console.log('Migration Completed: Metrics structure updated.');
-        }
-    }
-    migrateAllHypotheses();
 
     // Current Global Metric Config (for Confidence Tab)
     let metricConfig = JSON.parse(localStorage.getItem('bayesMetricConfig')) || [
@@ -199,28 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resetForm();
     });
 
-    // MAB Logic - Data Migration
-    function migrateData() {
-        let changed = false;
-        hypotheses.forEach(h => {
-            if (!h.problem) {
-                h.problem = '未分類';
-                changed = true;
-            }
-            if (!h.status || h.status.includes('(')) {
-                // Migrate old status format
-                if (h.status === 'Trial (試行)') h.status = 'trial';
-                else if (h.status === 'Success (成功)') h.status = 'sustain'; // Map success to sustain/completed
-                else if (h.status === 'Failed (失敗)') h.status = 'drop';
-                else h.status = 'not-started';
-                changed = true;
-            }
-            // Ensure resource is number
-            h.resourcePct = parseInt(h.resourcePct) || 0;
-        });
-        if (changed) saveHypotheses();
-    }
-    migrateData();
+
 
     // New MAB Elements
     const hypoProblemInput = document.getElementById('hypo-problem');
@@ -334,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Quick Log FAB Logic (Draggable)
     // Quick Log FAB Logic (Draggable - Immediate)
     if (fabQuickLog && quickLogPanel) {
         let isDragging = false;
@@ -1979,23 +1929,15 @@ document.addEventListener('DOMContentLoaded', () => {
             logMemo.value = lines.join('\n');
 
             // 1. Load Metrics from Hypothesis (use new 'metrics' standard)
-            // Migration/Fallback: If no 'metrics', use 'goalReach' etc or default
+            // Default Fallback
             let currentMetrics = hypo.metrics || [];
             if (currentMetrics.length === 0) {
-                // Try migration from old goals
-                if (hypo.goalReach || hypo.goalReaction || hypo.goalResult) {
-                    if (hypo.goalReach) currentMetrics.push({ id: 'm1', label: 'Reach', target: hypo.goalReach });
-                    if (hypo.goalReaction) currentMetrics.push({ id: 'm2', label: 'Reaction', target: hypo.goalReaction });
-                    if (hypo.goalResult) currentMetrics.push({ id: 'm3', label: 'Result', target: hypo.goalResult });
-                } else {
-                    // Default
-                    currentMetrics = [
-                        { id: 'm-' + Date.now() + '-1', label: 'Reach', target: 0 },
-                        { id: 'm-' + Date.now() + '-2', label: 'Reaction', target: 0 },
-                        { id: 'm-' + Date.now() + '-3', label: 'Result', target: 0 }
-                    ];
-                }
-                // Save formatted metrics back to hypo to persist migration
+                currentMetrics = [
+                    { id: 'm-' + Date.now() + '-1', label: 'Reach', target: 0 },
+                    { id: 'm-' + Date.now() + '-2', label: 'Reaction', target: 0 },
+                    { id: 'm-' + Date.now() + '-3', label: 'Result', target: 0 }
+                ];
+                // Save formatted metrics back to hypo
                 hypo.metrics = currentMetrics;
                 saveHypotheses();
             }
@@ -2366,7 +2308,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Update createTaskElement to include Clarification Button
-    const originalCreateTaskElement = createTaskElement; // backup? No, just rewrite function if possible or overwrite
     // Rewriting createTaskElement function to include new button
     function renderLogs() {
         if (!learningLogList) return;
