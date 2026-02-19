@@ -713,6 +713,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayStartDate = zoomedStart;
                 }
             }
+
+            // Clamp to Project Range (Goal + Logs)
+            if (displayStartDate < projectStartDate) displayStartDate = projectStartDate;
+            if (displayEndDate > projectEndDate) displayEndDate = projectEndDate;
         }
 
 
