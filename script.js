@@ -318,8 +318,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        fabQuickLog.removeEventListener('click', handleClick); // Safety removal if prev exists
-        fabQuickLog.addEventListener('click', handleClick);
+        fabContainer.removeEventListener('click', handleClick); // Safety removal if prev exists
+        fabContainer.addEventListener('click', handleClick);
 
         if (fabContainer) {
             fabContainer.addEventListener('pointerdown', (e) => {
