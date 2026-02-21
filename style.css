@@ -169,6 +169,8 @@ body {
     /* Slight bg for contrast */
     padding: 16px;
     border-radius: 8px;
+    z-index: 10001;
+    /* Ensure it is above everything */
 }
 
 .scale-group {
@@ -3109,4 +3111,37 @@ body {
         order: 1;
         margin-top: 24px;
     }
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Chart Toggle */
+.chart-toggle-group {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.toggle-btn {
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: white;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggle-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.toggle-btn:hover:not(.active) {
+    background: #f1f5f9;
 }

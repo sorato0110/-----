@@ -43,6 +43,11 @@
                         <section class="input-section">
                             <div class="card input-card">
                                 <div class="form-group">
+                                    <div
+                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                                        <label>Title</label>
+                                        <span style="font-size:0.7em; color:#888;">v2026.02.19-FIXED</span>
+                                    </div>
                                     <input type="text" id="task-title" placeholder="タイトル (例: 新機能LP作成)"
                                         class="text-input big-input">
                                 </div>
@@ -152,544 +157,641 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Sidebar: Self-Analysis Cockpit -->
-                    <div class="dashboard-sidebar">
-                        <div class="card sidebar-card">
-                            <h3 class="sidebar-title">Inner Compass <button id="edit-analysis-btn"
-                                    class="icon-btn-small"><i class="fa-solid fa-pen"></i></button></h3>
-
-                            <div class="chart-mini-container">
-                                <canvas id="needsRadarChart"></canvas>
-                            </div>
-
-                            <div class="sidebar-section mt-4">
-                                <h4 class="text-xs font-bold mb-2">My Core Values</h4>
-                                <div id="values-cloud" class="tags-container">
-                                    <span class="tag-placeholder">価値観を入力するとここに表示されます</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
+    </div>
 
-            <!-- Analysis Modal (Hidden by default) -->
-            <div id="analysis-modal" class="modal-overlay hidden">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>自己分析 (Deep Dive)</h2>
-                        <button id="close-analysis-modal" class="icon-btn"><i class="fa-solid fa-times"></i></button>
-                    </div>
-                    <div class="modal-body">
-                        <!-- Section 1: Unmet Needs -->
-                        <div class="card-flat">
-                            <h3 class="section-title-sm"><i class="fa-solid fa-heart-crack"></i> 満たされない欲求</h3>
-                            <p class="text-muted text-sm mb-4">
-                                日々の生活で「もっとこうだったらいいのに」と感じる瞬間や、不満を書き出しましょう。<br>
-                                それはあなたの「核となる欲求」を見つけるヒントです。
-                            </p>
-
-                            <div class="form-group">
-                                <label class="input-label">欲求の種類 (Type)</label>
-                                <select id="need-type" class="text-input">
-                                    <option value="Freedom">自由 (Freedom)</option>
-                                    <option value="Recognition">承認 (Recognition)</option>
-                                    <option value="Growth">成長 (Growth)</option>
-                                    <option value="Contribution">貢献 (Contribution)</option>
-                                    <option value="Connection">繋がり (Connection)</option>
-                                    <option value="Creation">創造 (Creation)</option>
-                                    <option value="Security">安定 (Security)</option>
-                                    <option value="Challenge">挑戦 (Challenge)</option>
-                                    <option value="Other">その他 (Other)</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="input-label">不満・渇望の具体的な描写</label>
-                                <textarea id="need-desc" class="text-input memo-input"
-                                    placeholder="例：毎日同じ作業の繰り返しで、自分がロボットのように感じる..."></textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="input-label">強烈度 (Intensity): <span
-                                        id="need-intensity-val">5</span></label>
-                                <input type="range" id="need-intensity" min="1" max="10" value="5" class="slider-input">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="input-label">トリガー (引き金となる出来事)</label>
-                                <input type="text" id="need-trigger" class="text-input" placeholder="例：上司に理不尽な指摘をされた時">
-                            </div>
-
-                            <button id="add-need-btn" class="primary-btn secondary-style">+ 欲求を追加</button>
-
-                            <div id="needs-list" class="mt-4 needs-list">
-                                <!-- Needs items injected here -->
-                            </div>
-                        </div>
-
-                        <!-- Section 2: Profile -->
-                        <div class="card-flat mt-4">
-                            <h3 class="section-title-sm"><i class="fa-solid fa-gem"></i> プロファイル</h3>
-                            <div class="form-group">
-                                <label class="input-label">最高の強み (Strength)</label>
-                                <textarea id="analysis-strength" class="text-input memo-input"
-                                    placeholder="努力しなくても人よりうまくできること、フロー状態に入れることは？"></textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="input-label">核となる価値観 (Core Values)</label>
-                                <p class="text-muted text-xs">カンマ区切りで入力 (例: 誠実, ユーモア, 冒険)</p>
-                                <input type="text" id="analysis-values" class="text-input"
-                                    placeholder="あなたの行動指針となるキーワード">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="input-label">ユニークネス (Uniqueness)</label>
-                                <textarea id="analysis-uniqueness" class="text-input memo-input"
-                                    placeholder="あなたにしかできない、代わりの効かない貢献とは？"></textarea>
-                            </div>
-
-                            <button id="save-profile-btn" class="primary-btn">プロファイルを保存</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-
-            <!-- Verification View -->
-            <div id="verification-view" class="view-content hidden">
-                <!-- Sticky Resource Gauge -->
-                <div class="sticky-resource-gauge">
-                    <div class="gauge-header">
-                        <span class="gauge-label">Total Resource Allocation</span>
-                        <span class="gauge-value" id="total-resource-val">0%</span>
-                    </div>
-                    <div class="gauge-track">
-                        <div class="gauge-fill" id="total-resource-fill" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <!-- Step 1: Input -->
-                <div class="card verification-input-card">
-                    <div class="step-badge">Step 1</div>
-                    <h2 class="section-title">新しいアーム(解決策)を追加する</h2>
-
-                    <div class="form-group mt-4">
-                        <label class="input-label">取り組む課題 (Problem / Theme)</label>
-                        <input type="text" id="hypo-problem" list="problem-list" placeholder="例：LPのCVRが低い"
-                            class="text-input">
-                        <datalist id="problem-list">
-                            <!-- Dynamic options -->
-                        </datalist>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="input-label">具体的なアイデア (Arm)</label>
-                        <input type="text" id="hypo-idea" placeholder="例：FVを動画にする" class="text-input">
-                    </div>
-
-                    <div class="info-box">
-                        <h4 class="info-title"><i class="fa-solid fa-circle-info"></i> 検証可能な仮説</h4>
-                        <ul class="info-list">
-                            <li>「もし○○すれば（行動）」</li>
-                            <li>「いつまでに・どれくらい（期間・数値）」</li>
-                            <li>「～だろう（結果）」</li>
-                        </ul>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="input-label">検証仮説</label>
-                        <textarea id="hypo-text" placeholder="例）もしFVを動画にすれば、直帰率が10%改善するだろう。"
-                            class="text-input memo-input" style="min-height: 80px;"></textarea>
-                    </div>
-
-                    <button id="add-hypo-btn" class="primary-btn secondary-style">+ このアームを追加</button>
-                </div>
-
-                <!-- Step 2 & 3: Board -->
-                <div class="verification-board mt-8">
-                    <div class="board-header">
-                        <div class="step-badge badge-blue">Step 2 & 3</div>
-                        <h2 class="section-title">小さく試す計画ボード (MABポートフォリオ)</h2>
-                        <div class="board-actions">
-                            <select class="text-input small-select">
-                                <option>追加順</option>
-                            </select>
-                            <select class="text-input small-select">
-                                <option>すべて</option>
-                            </select>
-                            <button id="clear-hypo-btn" class="danger-btn-outline">すべて削除</button>
-                        </div>
-                    </div>
-
-                    <div id="hypothesis-list" class="hypothesis-list-container">
-                        <!-- Hypothesis Cards injected here -->
-                    </div>
-                </div>
-            </div>
-
-
-            </section>
-            <!-- Confidence Analysis View -->
-            <div id="confidence-view" class="view-content hidden">
-                <!-- Step 1: Experiment Log Input -->
-                <div class="card">
-                    <div class="step-badge badge-blue">Step 1</div>
-                    <h2 class="section-title">実験結果を記録する</h2>
-
-                    <div class="form-row mt-4">
-                        <div class="form-group flex-1">
-                            <label class="input-label">アイデア名</label>
-                            <input type="text" id="log-idea-name" placeholder="例：AIで〇〇解説のショート動画" class="text-input">
-                        </div>
-                        <div class="form-group flex-1">
-                            <label class="input-label">テスト名 / 実験名</label>
-                            <input type="text" id="log-test-name" placeholder="例：1週間毎日投稿テスト" class="text-input">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="input-label">実施期間</label>
-                        <div class="date-range-row">
-                            <div class="date-input-wrapper">
-                                <span class="date-label-sm">開始</span>
-                                <input type="date" id="log-start-date" class="text-input">
-                            </div>
-                            <div class="date-input-wrapper">
-                                <span class="date-label-sm">終了</span>
-                                <input type="date" id="log-end-date" class="text-input">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="input-label">指標 (Metrics) <span
-                                style="font-size:0.8rem; color:#64748b;">※ここでも編集可能</span></label>
-                        <div id="metrics-container" class="metrics-container">
-                            <!-- Dynamic Metric Inputs will be injected here -->
-                        </div>
-                        <button type="button" id="add-metric-btn" class="text-btn small-btn mt-2"><i
-                                class="fa-solid fa-plus"></i> 指標を追加</button>
-                    </div>
-
-                    <div class="form-group mt-4">
-                        <label class="input-label">メモ (結果の概要)</label>
-                        <textarea id="log-memo" placeholder="例：フォロワーは増えたが、DMは0件だった"
-                            class="text-input memo-input"></textarea>
-                    </div>
-
-                    <div class="form-group mt-4"
-                        style="background: #f0fdf4; padding: 12px; border-radius: 8px; border: 1px dashed #86efac;">
-                        <label class="input-label" style="color: #166534;"><i class="fa-solid fa-lightbulb"></i>
-                            価値観の発見・更新 (Feedback to Strategy)</label>
-                        <p class="text-xs text-muted mb-2">
-                            この実験を通じて、自分にとって「重要だ」と再確認したこと、または新しく気づいた価値観があれば入力してください。（カンマ区切り）</p>
-                        <input type="text" id="log-values-discovery" class="text-input"
-                            placeholder="例: 誠実さ, スピード感, 遊び心">
-                    </div>
-
-                    <button id="add-log-btn" class="primary-btn secondary-style">+ この実験結果を追加</button>
-                </div>
-
-                <!-- Step 2: Learning Log List -->
-                <div class="mt-8">
-                    <div class="board-header">
-                        <div class="step-badge badge-blue">Step 2</div>
-                        <h2 class="section-title">データから学びを言語化する</h2>
-                        <div class="board-actions">
-                            <select class="text-input small-select">
-                                <option>すべてのアイデア</option>
-                            </select>
-                            <select class="text-input small-select">
-                                <option>新しい順</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="learning-log-list">
-                        <div class="empty-state-box">
-                            実験ログがありません。
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 3: Confidence Update -->
-                <div id="confidence-tracker-section" class="card mt-8 hidden">
-                    <div class="step-badge badge-blue">Step 3</div>
-                    <h2 class="section-title">仮説の自信度をアップデートする</h2>
-                    <p class="text-muted text-sm mb-4">
-                        小さな実験で得られたデータやフィードバックをもとに、「このアイデアがうまくいく確率」を自分なりに更新していきましょう。<br>これはベイズ更新の "ざっくりバージョン" です。</p>
-
-                    <div class="confidence-tracker-placeholder">
-                        実験を追加すると、ここに自信度トラッカーが表示されます。
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Log Panel (Chat Style) -->
-            <div id="quick-log-panel" class="quick-log-panel hidden">
-                <!-- Header -->
-                <div class="quick-log-header">
-                    <button id="quick-log-back-btn" class="icon-btn hidden" style="margin-right:8px;"><i
-                            class="fa-solid fa-chevron-left"></i></button>
-                    <h3 id="quick-log-title">進捗ログ</h3>
-                    <button class="icon-btn" id="close-quick-log"><i class="fa-solid fa-times"></i></button>
-                </div>
-
-                <!-- View A: Project List -->
-                <div id="quick-log-view-list" class="quick-log-content">
-                    <!-- Project Items injected here -->
-                </div>
-
-                <!-- View B: Chat Interface -->
-                <div id="quick-log-view-chat" class="quick-log-content hidden">
-                    <!-- Chart Section -->
-                    <div id="chat-chart-container" class="chat-chart-container">
-                        <div class="chart-header-row"
-                            style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 8px;">
-
-                            <!-- View Switcher -->
-                            <div class="chart-view-switcher">
-                                <button class="view-switch-btn active" data-mode="line" title="全体トレンド"><i
-                                        class="fa-solid fa-chart-line"></i></button>
-                                <button class="view-switch-btn" data-mode="bar" title="昨日比（差分）"><i
-                                        class="fa-solid fa-chart-simple"></i></button>
-                                <button class="view-switch-btn" data-mode="calendar" title="継続状況"><i
-                                        class="fa-solid fa-calendar-days"></i></button>
-                            </div>
-
-                            <div class="chart-controls" style="flex:1;">
-                                <!-- Dynamic controls injected by script.js -->
-                            </div>
-                            <button id="chart-reset-zoom-btn" class="chart-reset-btn hidden" title="全期間">
-                                <i class="fa-solid fa-compress"></i>
-                            </button>
-                        </div>
-
-                        <div class="chart-wrapper">
-                            <canvas id="progressChart"></canvas>
-                            <div id="calendar-view-container" class="calendar-view-container hidden">
-                                <!-- Calendar Grid Injected Here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Timeline -->
-                    <div id="chat-timeline" class="chat-timeline">
-                        <!-- Chat bubbles injected here -->
-                    </div>
-
-                    <!-- Fixed Input Area -->
-                    <div class="chat-input-area">
-                        <!-- Settings Mode Overlay -->
-                        <div id="chat-settings-panel" class="chat-settings-panel hidden">
-                            <div class="chat-settings-header">
-                                <span>指標のカスタマイズ</span>
-                                <button id="close-chat-settings" class="icon-btn small-btn"><i
-                                        class="fa-solid fa-check"></i> 完了</button>
-                            </div>
-                            <div id="chat-settings-list" class="chat-settings-list">
-                                <!-- Dynamic Metric Settings Items -->
-                            </div>
-                            <button id="add-chat-metric-btn" class="text-btn small-btn mt-2"><i
-                                    class="fa-solid fa-plus"></i> 指標を追加</button>
-                        </div>
-
-                        <!-- Standard Input Mode -->
-                        <div id="chat-input-standard">
-                            <!-- Row 1: Date, Metrics, Settings Btn -->
-                            <div class="chat-input-row-1">
-                                <input type="date" id="chat-date" class="chat-date-input">
-                                <button id="chat-settings-btn" class="icon-btn small-icon-btn" title="指標を編集"><i
-                                        class="fa-solid fa-sliders"></i></button>
-                                <div id="chat-metrics-scroll" class="chat-metrics-scroll">
-                                    <!-- Dynamic Metric Inputs injected here -->
-                                </div>
-                            </div>
-                            <!-- Row 2: Memo & Send -->
-                            <div class="chat-input-row-2">
-                                <textarea id="chat-memo" class="chat-memo-input" placeholder="メモを入力..."></textarea>
-                                <button id="chat-send-btn" class="chat-send-btn"><i
-                                        class="fa-solid fa-paper-plane"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Clarification Sheet (Bottom Sheet) -->
-            <div id="clarification-sheet-overlay" class="sheet-overlay hidden">
-                <div id="clarification-sheet" class="bottom-sheet large-sheet">
-                    <!-- Sheet Header -->
-                    <div class="sheet-header">
-                        <div class="sheet-header-left">
-                            <span class="sheet-title">タスクの明確化 (Brainstorming)</span>
-                            <div class="sheet-task-name" id="clar-task-title">Task Name</div>
-                        </div>
-                        <button class="icon-btn" id="close-clarification-sheet"><i
-                                class="fa-solid fa-times"></i></button>
-                    </div>
-
-                    <!-- Step Nav -->
-                    <div class="sheet-nav">
-                        <button class="sheet-nav-item active" id="nav-step1" data-step="1">
-                            <span class="step-num">Step 1</span> 発散 (書き出し)
-                            <span class="badge-count" id="step1-count">0/20</span>
-                        </button>
-                        <button class="sheet-nav-item" id="nav-step2" data-step="2">
-                            <span class="step-num">Step 2</span> 収束 (上位5選定)
-                            <i class="fa-solid fa-lock" id="step2-lock-icon"></i>
-                        </button>
-                    </div>
-
-                    <!-- Sheet Content Area -->
-                    <div class="sheet-content-scroll">
-
-                        <!-- Step 1 View -->
-                        <div id="clar-step1-view" class="step-view">
-                            <div class="input-area-sticky">
-                                <div class="input-row">
-                                    <input type="text" id="clar-idea-input" class="text-input"
-                                        placeholder="アイデアを1行で入力 (例: 参考書を3冊買う)">
-                                    <button id="clar-add-btn" class="primary-btn compact-btn">追加</button>
-                                </div>
-                                <div class="bulk-toggle">
-                                    <button class="text-btn-small" id="toggle-bulk-input"><i
-                                            class="fa-solid fa-paste"></i> まとめて貼り付け</button>
-                                </div>
-                                <div id="bulk-input-area" class="bulk-area hidden">
-                                    <textarea id="clar-bulk-text" class="text-input"
-                                        placeholder="改行区切りで複数のアイデアを一括追加..."></textarea>
-                                    <button id="clar-bulk-add-btn" class="secondary-btn compact-btn mt-2">一括追加</button>
-                                </div>
-                            </div>
-
-                            <div class="idea-list-container">
-                                <ul id="clar-idea-list" class="idea-list">
-                                    <!-- Ideas injected here -->
-                                </ul>
-                                <div id="step1-empty-state" class="empty-state-text">
-                                    まずは「どうやって実現するか」を<br>最低20個書き出してみましょう。<br>質より量が重要です。
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Step 2 View -->
-                        <div id="clar-step2-view" class="step-view hidden">
-                            <!-- Top 5 Tray (Sticky) -->
-                            <div class="top5-tray">
-                                <div class="tray-header">
-                                    <span>上位5つの仮説候補</span>
-                                    <span class="tray-count" id="tray-count">0/5</span>
-                                </div>
-                                <div id="top5-list" class="top5-list">
-                                    <!-- Selected items mirror -->
-                                </div>
-                                <button id="send-to-hypo-btn" class="primary-btn mt-4 full-width"
-                                    disabled>上位5つを「仮説検証」へ送る</button>
-                            </div>
-
-                            <div class="selection-list-container">
-                                <p class="instruction-text">書き出したアイデアから、最も効果的と思われるものを5つだけ選んでください。</p>
-                                <ul id="clar-selection-list" class="selection-list">
-                                    <!-- Selection items injected here -->
-                                </ul>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-            <!-- Criteria Setting Modal -->
-            <div id="criteria-modal-overlay" class="modal-overlay hidden">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3><i class="fa-solid fa-scale-balanced"></i> 撤退基準・成功定義の設定</h3>
-                        <button id="close-criteria-modal" class="icon-btn"><i class="fa-solid fa-times"></i></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="modal-description">
-                            「感情」ではなく「数字」で判断するための契約書です。<br>
-                            期限までに目標に達しなかった場合の行動を事前に決めておきましょう。
-                        </p>
-
+    <!-- Verification View (KPI Logger & Hypothesis) -->
+    <div id="verification-view" class="view-content">
+        <div class="dashboard-container">
+            <div class="dashboard-main">
+                <section class="kpi-section mb-8">
+                    <h2 class="section-title"><i class="fa-solid fa-chart-pie"></i> KPI Logger</h2>
+                    <div class="card">
                         <div class="form-group">
-                            <label class="input-label">判定に使う指標 (KPI)</label>
-                            <select id="criteria-metric-select" class="text-input">
-                                <!-- Dynamic options -->
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="input-label">判定日 (Deadline)</label>
-                            <input type="date" id="criteria-deadline" class="text-input">
-                        </div>
-
-                        <div class="criteria-levels">
-                            <!-- Level 1: Success -->
-                            <div class="criteria-level level-success">
-                                <div class="level-icon"><i class="fa-solid fa-rocket"></i></div>
-                                <div class="level-content">
-                                    <label>基本目標 (GO / EXPAND)</label>
-                                    <div class="level-inputs">
-                                        <select id="criteria-op-success" class="small-select">
-                                            <option value=">=">以上 (>=)</option>
-                                            <option value="<=">以下 (<=)< /option>
-                                        </select>
-                                        <input type="number" id="criteria-val-success" class="text-input small-input"
-                                            placeholder="例: 100">
-                                    </div>
-                                    <p class="level-desc">この数値を超えたら、検証成功。本格運用へ。</p>
-                                </div>
-                            </div>
-
-                            <!-- Level 2: Pivot -->
-                            <div class="criteria-level level-pivot">
-                                <div class="level-icon"><i class="fa-solid fa-rotate"></i></div>
-                                <div class="level-content">
-                                    <label>要改善 (PIVOT / ITERATE)</label>
-                                    <div class="level-inputs">
-                                        <span>もし</span>
-                                        <input type="number" id="criteria-val-pivot" class="text-input small-input"
-                                            placeholder="例: 50">
-                                        <span>未満なら...</span>
-                                    </div>
-                                    <p class="level-desc">方向性は良いが、方法を変える必要がある。</p>
-                                </div>
-                            </div>
-
-                            <!-- Level 3: Stop -->
-                            <div class="criteria-level level-stop">
-                                <div class="level-icon"><i class="fa-solid fa-hand"></i></div>
-                                <div class="level-content">
-                                    <label>撤退ライン (STOP / ABORT)</label>
-                                    <div class="level-inputs">
-                                        <span>もし</span>
-                                        <input type="number" id="criteria-val-stop" class="text-input small-input"
-                                            placeholder="例: 10">
-                                        <span>未満なら...</span>
-                                    </div>
-                                    <p class="level-desc">サンクコストを無視して、潔く撤退する。</p>
-                                </div>
+                            <label>指標 (Metric) <button id="add-metric-btn" class="icon-btn small-btn"><i
+                                        class="fa-solid fa-plus"></i></button></label>
+                            <div id="metrics-container">
+                                <!-- Metrics dynamic -->
                             </div>
                         </div>
-
-                        <button id="save-criteria-btn" class="primary-btn mt-4 full-width">この基準で契約する</button>
                     </div>
-                </div>
-            </div>
-        </main>
+                </section>
 
-        <!-- FAB -->
-        <div class="fab-container group" id="fab-container">
-            <button id="fab-quick-log" class="fab-button">
-                <i class="fa-regular fa-comment-dots"></i>
-            </button>
+                <section class="hypothesis-section">
+                    <h2 class="section-title"><i class="fa-solid fa-flask"></i> Hypothesis (Arms)</h2>
+                    <div id="hypothesis-list" class="hypothesis-list">
+                        <!-- Cards injected here -->
+                    </div>
+                </section>
+            </div>
         </div>
     </div>
-    <script src="script.js?v=20260212c"></script>
+    <!-- Sidebar: Self-Analysis Cockpit -->
+    <div class="dashboard-sidebar">
+        <div class="card sidebar-card">
+            <h3 class="sidebar-title">Inner Compass <button id="edit-analysis-btn" class="icon-btn-small"><i
+                        class="fa-solid fa-pen"></i></button></h3>
+
+
+            <div class="chart-mini-container">
+                <div class="chart-toggle-group">
+                    <button id="toggle-chart-needs" class="toggle-btn active">Needs</button>
+                    <button id="toggle-chart-reflection" class="toggle-btn">Reflections</button>
+                </div>
+                <canvas id="needsRadarChart"></canvas>
+                <canvas id="reflectionRadarChart" class="hidden"></canvas>
+            </div>
+
+            <div class="sidebar-section mt-4">
+                <h4 class="text-xs font-bold mb-2">My Core Values</h4>
+                <div id="values-cloud" class="tags-container">
+                    <span class="tag-placeholder">価値観を入力するとここに表示されます</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Analysis Modal (Hidden by default) -->
+    <div id="analysis-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>自己分析 (Deep Dive)</h2>
+                <button id="close-analysis-modal" class="icon-btn"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- Section 1: Unmet Needs -->
+                <div class="card-flat">
+                    <h3 class="section-title-sm"><i class="fa-solid fa-heart-crack"></i> 満たされない欲求</h3>
+                    <p class="text-muted text-sm mb-4">
+                        日々の生活で「もっとこうだったらいいのに」と感じる瞬間や、不満を書き出しましょう。<br>
+                        それはあなたの「核となる欲求」を見つけるヒントです。
+                    </p>
+
+                    <div class="form-group">
+                        <label class="input-label">欲求の種類 (Type)</label>
+                        <select id="need-type" class="text-input">
+                            <option value="Freedom">自由 (Freedom)</option>
+                            <option value="Recognition">承認 (Recognition)</option>
+                            <option value="Growth">成長 (Growth)</option>
+                            <option value="Contribution">貢献 (Contribution)</option>
+                            <option value="Connection">繋がり (Connection)</option>
+                            <option value="Creation">創造 (Creation)</option>
+                            <option value="Security">安定 (Security)</option>
+                            <option value="Challenge">挑戦 (Challenge)</option>
+                            <option value="Other">その他 (Other)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">不満・渇望の具体的な描写</label>
+                        <textarea id="need-desc" class="text-input memo-input"
+                            placeholder="例：毎日同じ作業の繰り返しで、自分がロボットのように感じる..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">強烈度 (Intensity): <span id="need-intensity-val">5</span></label>
+                        <input type="range" id="need-intensity" min="1" max="10" value="5" class="slider-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">トリガー (引き金となる出来事)</label>
+                        <input type="text" id="need-trigger" class="text-input" placeholder="例：上司に理不尽な指摘をされた時">
+                    </div>
+
+                    <button id="add-need-btn" class="primary-btn secondary-style">+ 欲求を追加</button>
+
+                    <div id="needs-list" class="mt-4 needs-list">
+                        <!-- Needs items injected here -->
+                    </div>
+                </div>
+
+                <!-- Section 2: Profile -->
+                <div class="card-flat mt-4">
+                    <h3 class="section-title-sm"><i class="fa-solid fa-gem"></i> プロファイル</h3>
+                    <div class="form-group">
+                        <label class="input-label">最高の強み (Strength)</label>
+                        <textarea id="analysis-strength" class="text-input memo-input"
+                            placeholder="努力しなくても人よりうまくできること、フロー状態に入れることは？"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">核となる価値観 (Core Values)</label>
+                        <p class="text-muted text-xs">カンマ区切りで入力 (例: 誠実, ユーモア, 冒険)</p>
+                        <input type="text" id="analysis-values" class="text-input" placeholder="あなたの行動指針となるキーワード">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">ユニークネス (Uniqueness)</label>
+                        <textarea id="analysis-uniqueness" class="text-input memo-input"
+                            placeholder="あなたにしかできない、代わりの効かない貢献とは？"></textarea>
+                    </div>
+
+                    <button id="save-profile-btn" class="primary-btn">プロファイルを保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Verification View -->
+    <div id="verification-view" class="view-content hidden">
+        <!-- Sticky Resource Gauge -->
+        <div class="sticky-resource-gauge">
+            <div class="gauge-header">
+                <span class="gauge-label">Total Resource Allocation</span>
+                <span class="gauge-value" id="total-resource-val">0%</span>
+            </div>
+            <div class="gauge-track">
+                <div class="gauge-fill" id="total-resource-fill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Step 1: Input -->
+        <div class="card verification-input-card">
+            <div class="step-badge">Step 1</div>
+            <h2 class="section-title">新しいアーム(解決策)を追加する</h2>
+
+            <div class="form-group mt-4">
+                <label class="input-label">取り組む課題 (Problem / Theme)</label>
+                <input type="text" id="hypo-problem" list="problem-list" placeholder="例：LPのCVRが低い" class="text-input">
+                <datalist id="problem-list">
+                    <!-- Dynamic options -->
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label class="input-label">具体的なアイデア (Arm)</label>
+                <input type="text" id="hypo-idea" placeholder="例：FVを動画にする" class="text-input">
+            </div>
+
+            <div class="info-box">
+                <h4 class="info-title"><i class="fa-solid fa-circle-info"></i> 検証可能な仮説</h4>
+                <ul class="info-list">
+                    <li>「もし○○すれば（行動）」</li>
+                    <li>「いつまでに・どれくらい（期間・数値）」</li>
+                    <li>「～だろう（結果）」</li>
+                </ul>
+            </div>
+
+            <div class="form-group">
+                <label class="input-label">検証仮説</label>
+                <textarea id="hypo-text" placeholder="例）もしFVを動画にすれば、直帰率が10%改善するだろう。" class="text-input memo-input"
+                    style="min-height: 80px;"></textarea>
+            </div>
+
+            <button id="add-hypo-btn" class="primary-btn secondary-style">+ このアームを追加</button>
+        </div>
+
+        <!-- Step 2 & 3: Board -->
+        <div class="verification-board mt-8">
+            <div class="board-header">
+                <div class="step-badge badge-blue">Step 2 & 3</div>
+                <h2 class="section-title">小さく試す計画ボード (MABポートフォリオ)</h2>
+                <div class="board-actions">
+                    <select class="text-input small-select">
+                        <option>追加順</option>
+                    </select>
+                    <select class="text-input small-select">
+                        <option>すべて</option>
+                    </select>
+                    <button id="clear-hypo-btn" class="danger-btn-outline">すべて削除</button>
+                </div>
+            </div>
+
+            <div id="hypothesis-list" class="hypothesis-list-container">
+                <!-- Hypothesis Cards injected here -->
+            </div>
+        </div>
+    </div>
+
+
+    </section>
+    <!-- Confidence Analysis View -->
+    <div id="confidence-view" class="view-content hidden">
+        <!-- Step 1: Experiment Log Input -->
+        <div class="card">
+            <div class="step-badge badge-blue">Step 1</div>
+            <h2 class="section-title">実験結果を記録する</h2>
+
+            <div class="form-row mt-4">
+                <div class="form-group flex-1">
+                    <label class="input-label">アイデア名</label>
+                    <input type="text" id="log-idea-name" placeholder="例：AIで〇〇解説のショート動画" class="text-input">
+                </div>
+                <div class="form-group flex-1">
+                    <label class="input-label">テスト名 / 実験名</label>
+                    <input type="text" id="log-test-name" placeholder="例：1週間毎日投稿テスト" class="text-input">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="input-label">実施期間</label>
+                <div class="date-range-row">
+                    <div class="date-input-wrapper">
+                        <span class="date-label-sm">開始</span>
+                        <input type="date" id="log-start-date" class="text-input">
+                    </div>
+                    <div class="date-input-wrapper">
+                        <span class="date-label-sm">終了</span>
+                        <input type="date" id="log-end-date" class="text-input">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="input-label">指標 (Metrics) <span
+                        style="font-size:0.8rem; color:#64748b;">※ここでも編集可能</span></label>
+                <div id="metrics-container" class="metrics-container">
+                    <!-- Dynamic Metric Inputs will be injected here -->
+                </div>
+                <button type="button" id="add-metric-btn" class="text-btn small-btn mt-2"><i
+                        class="fa-solid fa-plus"></i> 指標を追加</button>
+            </div>
+
+            <div class="form-group mt-4">
+                <label class="input-label">メモ (結果の概要)</label>
+                <textarea id="log-memo" placeholder="例：フォロワーは増えたが、DMは0件だった" class="text-input memo-input"></textarea>
+            </div>
+
+            <div class="form-group mt-4"
+                style="background: #f0fdf4; padding: 12px; border-radius: 8px; border: 1px dashed #86efac;">
+                <label class="input-label" style="color: #166534;"><i class="fa-solid fa-lightbulb"></i>
+                    価値観の発見・更新 (Feedback to Strategy)</label>
+                <p class="text-xs text-muted mb-2">
+                    この実験を通じて、自分にとって「重要だ」と再確認したこと、または新しく気づいた価値観があれば入力してください。（カンマ区切り）</p>
+                <input type="text" id="log-values-discovery" class="text-input" placeholder="例: 誠実さ, スピード感, 遊び心">
+            </div>
+
+            <button id="add-log-btn" class="primary-btn secondary-style">+ この実験結果を追加</button>
+        </div>
+
+        <!-- Step 2: Learning Log List -->
+        <div class="mt-8">
+            <div class="board-header">
+                <div class="step-badge badge-blue">Step 2</div>
+                <h2 class="section-title">データから学びを言語化する</h2>
+                <div class="board-actions">
+                    <select class="text-input small-select">
+                        <option>すべてのアイデア</option>
+                    </select>
+                    <select class="text-input small-select">
+                        <option>新しい順</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="learning-log-list">
+                <div class="empty-state-box">
+                    実験ログがありません。
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Confidence Update -->
+        <div id="confidence-tracker-section" class="card mt-8 hidden">
+            <div class="step-badge badge-blue">Step 3</div>
+            <h2 class="section-title">仮説の自信度をアップデートする</h2>
+            <p class="text-muted text-sm mb-4">
+                小さな実験で得られたデータやフィードバックをもとに、「このアイデアがうまくいく確率」を自分なりに更新していきましょう。<br>これはベイズ更新の "ざっくりバージョン" です。</p>
+
+            <div class="confidence-tracker-placeholder">
+                実験を追加すると、ここに自信度トラッカーが表示されます。
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Log Panel (Chat Style) -->
+    <div id="quick-log-panel" class="quick-log-panel hidden">
+        <!-- Header -->
+        <div class="quick-log-header">
+            <button id="quick-log-back-btn" class="icon-btn hidden" style="margin-right:8px;"><i
+                    class="fa-solid fa-chevron-left"></i></button>
+            <h3 id="quick-log-title">進捗ログ</h3>
+            <button class="icon-btn" id="close-quick-log"><i class="fa-solid fa-times"></i></button>
+        </div>
+
+        <!-- View A: Project List -->
+        <div id="quick-log-view-list" class="quick-log-content">
+            <!-- Project Items injected here -->
+        </div>
+
+        <!-- View B: Chat Interface -->
+        <div id="quick-log-view-chat" class="quick-log-content hidden">
+            <!-- Chart Section -->
+            <div id="chat-chart-container" class="chat-chart-container">
+                <div class="chart-header-row"
+                    style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 8px;">
+
+                    <!-- View Switcher -->
+                    <div class="chart-view-switcher">
+                        <button class="view-switch-btn active" data-mode="line" title="全体トレンド"><i
+                                class="fa-solid fa-chart-line"></i></button>
+                        <button class="view-switch-btn" data-mode="bar" title="昨日比（差分）"><i
+                                class="fa-solid fa-chart-simple"></i></button>
+                        <button class="view-switch-btn" data-mode="calendar" title="継続状況"><i
+                                class="fa-solid fa-calendar-days"></i></button>
+                    </div>
+
+                    <div class="chart-controls" style="flex:1;">
+                        <!-- Dynamic controls injected by script.js -->
+                    </div>
+                    <button id="chart-reset-zoom-btn" class="chart-reset-btn hidden" title="全期間">
+                        <i class="fa-solid fa-compress"></i>
+                    </button>
+                </div>
+
+                <div class="chart-wrapper">
+                    <canvas id="progressChart"></canvas>
+                    <div id="calendar-view-container" class="calendar-view-container hidden">
+                        <!-- Calendar Grid Injected Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div id="chat-timeline" class="chat-timeline">
+                <!-- Chat bubbles injected here -->
+            </div>
+
+            <!-- Fixed Input Area -->
+            <div class="chat-input-area">
+                <!-- Settings Mode Overlay -->
+                <div id="chat-settings-panel" class="chat-settings-panel hidden">
+                    <div class="chat-settings-header">
+                        <span>指標のカスタマイズ</span>
+                        <button id="close-chat-settings" class="icon-btn small-btn"><i class="fa-solid fa-check"></i>
+                            完了</button>
+                    </div>
+                    <div id="chat-settings-list" class="chat-settings-list">
+                        <!-- Dynamic Metric Settings Items -->
+                    </div>
+                    <button id="add-chat-metric-btn" class="text-btn small-btn mt-2"><i class="fa-solid fa-plus"></i>
+                        指標を追加</button>
+                </div>
+
+                <!-- Standard Input Mode -->
+                <div id="chat-input-standard">
+                    <!-- Row 1: Date, Metrics, Settings Btn -->
+                    <div class="chat-input-row-1">
+                        <input type="date" id="chat-date" class="chat-date-input">
+                        <button id="chat-settings-btn" class="icon-btn small-icon-btn" title="指標を編集"><i
+                                class="fa-solid fa-sliders"></i></button>
+                        <div id="chat-metrics-scroll" class="chat-metrics-scroll">
+                            <!-- Dynamic Metric Inputs injected here -->
+                        </div>
+                    </div>
+                    <!-- Row 2: Memo & Send -->
+                    <div class="chat-input-row-2">
+                        <textarea id="chat-memo" class="chat-memo-input" placeholder="メモを入力..."></textarea>
+                        <button id="chat-send-btn" class="chat-send-btn"><i
+                                class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Clarification Sheet (Bottom Sheet) -->
+    <div id="clarification-sheet-overlay" class="sheet-overlay hidden">
+        <div id="clarification-sheet" class="bottom-sheet large-sheet">
+            <!-- Sheet Header -->
+            <div class="sheet-header">
+                <div class="sheet-header-left">
+                    <span class="sheet-title">タスクの明確化 (Brainstorming)</span>
+                    <div class="sheet-task-name" id="clar-task-title">Task Name</div>
+                </div>
+                <button class="icon-btn" id="close-clarification-sheet"><i class="fa-solid fa-times"></i></button>
+            </div>
+
+            <!-- Step Nav -->
+            <div class="sheet-nav">
+                <button class="sheet-nav-item active" id="nav-step1" data-step="1">
+                    <span class="step-num">Step 1</span> 発散 (書き出し)
+                    <span class="badge-count" id="step1-count">0/20</span>
+                </button>
+                <button class="sheet-nav-item" id="nav-step2" data-step="2">
+                    <span class="step-num">Step 2</span> 収束 (上位5選定)
+                    <i class="fa-solid fa-lock" id="step2-lock-icon"></i>
+                </button>
+            </div>
+
+            <!-- Sheet Content Area -->
+            <div class="sheet-content-scroll">
+
+                <!-- Step 1 View -->
+                <div id="clar-step1-view" class="step-view">
+                    <div class="input-area-sticky">
+                        <div class="input-row">
+                            <input type="text" id="clar-idea-input" class="text-input"
+                                placeholder="アイデアを1行で入力 (例: 参考書を3冊買う)">
+                            <button id="clar-add-btn" class="primary-btn compact-btn">追加</button>
+                        </div>
+                        <div class="bulk-toggle">
+                            <button class="text-btn-small" id="toggle-bulk-input"><i class="fa-solid fa-paste"></i>
+                                まとめて貼り付け</button>
+                        </div>
+                        <div id="bulk-input-area" class="bulk-area hidden">
+                            <textarea id="clar-bulk-text" class="text-input"
+                                placeholder="改行区切りで複数のアイデアを一括追加..."></textarea>
+                            <button id="clar-bulk-add-btn" class="secondary-btn compact-btn mt-2">一括追加</button>
+                        </div>
+                    </div>
+
+                    <div class="idea-list-container">
+                        <ul id="clar-idea-list" class="idea-list">
+                            <!-- Ideas injected here -->
+                        </ul>
+                        <div id="step1-empty-state" class="empty-state-text">
+                            まずは「どうやって実現するか」を<br>最低20個書き出してみましょう。<br>質より量が重要です。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 View -->
+                <div id="clar-step2-view" class="step-view hidden">
+                    <!-- Top 5 Tray (Sticky) -->
+                    <div class="top5-tray">
+                        <div class="tray-header">
+                            <span>上位5つの仮説候補</span>
+                            <span class="tray-count" id="tray-count">0/5</span>
+                        </div>
+                        <div id="top5-list" class="top5-list">
+                            <!-- Selected items mirror -->
+                        </div>
+                        <button id="send-to-hypo-btn" class="primary-btn mt-4 full-width"
+                            disabled>上位5つを「仮説検証」へ送る</button>
+                    </div>
+
+                    <div class="selection-list-container">
+                        <p class="instruction-text">書き出したアイデアから、最も効果的と思われるものを5つだけ選んでください。</p>
+                        <ul id="clar-selection-list" class="selection-list">
+                            <!-- Selection items injected here -->
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- Criteria Setting Modal -->
+    <div id="criteria-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-scale-balanced"></i> 撤退基準・成功定義の設定</h3>
+                <button id="close-criteria-modal" class="icon-btn"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">
+                    「感情」ではなく「数字」で判断するための契約書です。<br>
+                    期限までに目標に達しなかった場合の行動を事前に決めておきましょう。
+                </p>
+
+                <div class="form-group">
+                    <label class="input-label">判定に使う指標 (KPI)</label>
+                    <select id="criteria-metric-select" class="text-input">
+                        <!-- Dynamic options -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="input-label">判定日 (Deadline)</label>
+                    <input type="date" id="criteria-deadline" class="text-input">
+                </div>
+
+                <div class="criteria-levels">
+                    <!-- Level 1: Success -->
+                    <div class="criteria-level level-success">
+                        <div class="level-icon"><i class="fa-solid fa-rocket"></i></div>
+                        <div class="level-content">
+                            <label>基本目標 (GO / EXPAND)</label>
+                            <div class="level-inputs">
+                                <select id="criteria-op-success" class="small-select">
+                                    <option value=">=">以上 (>=)</option>
+                                    <option value="<=">以下 (<=)< /option>
+                                </select>
+                                <input type="number" id="criteria-val-success" class="text-input small-input"
+                                    placeholder="例: 100">
+                            </div>
+                            <p class="level-desc">この数値を超えたら、検証成功。本格運用へ。</p>
+                        </div>
+                    </div>
+
+                    <!-- Level 2: Pivot -->
+                    <div class="criteria-level level-pivot">
+                        <div class="level-icon"><i class="fa-solid fa-rotate"></i></div>
+                        <div class="level-content">
+                            <label>要改善 (PIVOT / ITERATE)</label>
+                            <div class="level-inputs">
+                                <span>もし</span>
+                                <input type="number" id="criteria-val-pivot" class="text-input small-input"
+                                    placeholder="例: 50">
+                                <span>未満なら...</span>
+                            </div>
+                            <p class="level-desc">方向性は良いが、方法を変える必要がある。</p>
+                        </div>
+                    </div>
+
+                    <!-- Level 3: Stop -->
+                    <div class="criteria-level level-stop">
+                        <div class="level-icon"><i class="fa-solid fa-hand"></i></div>
+                        <div class="level-content">
+                            <label>撤退ライン (STOP / ABORT)</label>
+                            <div class="level-inputs">
+                                <span>もし</span>
+                                <input type="number" id="criteria-val-stop" class="text-input small-input"
+                                    placeholder="例: 10">
+                                <span>未満なら...</span>
+                            </div>
+                            <p class="level-desc">サンクコストを無視して、潔く撤退する。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="save-criteria-btn" class="primary-btn mt-4 full-width">この基準で契約する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reflection Modal -->
+    <div id="reflection-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-person-rays"></i> 振り返り (Reflection)</h2>
+                <button id="close-reflection-modal" class="icon-btn"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted text-sm mb-4">
+                    お疲れ様でした！このタスクを通して得られた心理的報酬を記録しましょう。<br>
+                    （1: 全くない - 10: 非常に強く感じた）
+                </p>
+
+                <!-- 1. Growth -->
+                <div class="card-flat mb-4"
+                    style="margin-bottom: 16px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                    <h3 class="section-title-sm" style="font-size: 1rem; margin-bottom: 8px;">🌱 成長・達成 (Growth)
+                    </h3>
+                    <p class="text-xs text-muted mb-2" style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">
+                        能力の向上、目標達成の有能感</p>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <input type="range" id="ref-growth-score" min="1" max="10" value="5" class="slider-input"
+                            style="flex: 1;">
+                        <span id="ref-growth-val"
+                            style="font-size: 1.1rem; font-weight: bold; width: 32px; text-align: center;">5</span>
+                    </div>
+                    <textarea id="ref-growth-text" class="text-input" rows="2"
+                        placeholder="例: 新しいバグを解決してスキルが上がった"></textarea>
+                </div>
+
+                <!-- 2. Autonomy -->
+                <div class="card-flat mb-4"
+                    style="margin-bottom: 16px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                    <h3 class="section-title-sm" style="font-size: 1rem; margin-bottom: 8px;">🦁 自律・目的
+                        (Autonomy)</h3>
+                    <p class="text-xs text-muted mb-2" style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">
+                        自らの意思による選択、目的との一致</p>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <input type="range" id="ref-autonomy-score" min="1" max="10" value="5" class="slider-input"
+                            style="flex: 1;">
+                        <span id="ref-autonomy-val"
+                            style="font-size: 1.1rem; font-weight: bold; width: 32px; text-align: center;">5</span>
+                    </div>
+                    <textarea id="ref-autonomy-text" class="text-input" rows="2"
+                        placeholder="例: 自分で計画を立てて実行できた"></textarea>
+                </div>
+
+                <!-- 3. Connection -->
+                <div class="card-flat mb-4"
+                    style="margin-bottom: 16px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                    <h3 class="section-title-sm" style="font-size: 1rem; margin-bottom: 8px;">🤝 関係性・貢献
+                        (Connection)</h3>
+                    <p class="text-xs text-muted mb-2" style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">
+                        他者との繋がり、感謝、貢献</p>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                        <input type="range" id="ref-connection-score" min="1" max="10" value="5" class="slider-input"
+                            style="flex: 1;">
+                        <span id="ref-connection-val"
+                            style="font-size: 1.1rem; font-weight: bold; width: 32px; text-align: center;">5</span>
+                    </div>
+                    <textarea id="ref-connection-text" class="text-input" rows="2" placeholder="例: 同僚の役に立てた"></textarea>
+                </div>
+
+                <button id="save-reflection-btn" class="primary-btn">完了してログを保存</button>
+            </div>
+        </div>
+    </div>
+    </main>
+
+    <!-- FAB -->
+    <div class="fab-container group" id="fab-container">
+        <button id="fab-quick-log" class="fab-button">
+            <i class="fa-regular fa-comment-dots"></i>
+        </button>
+    </div>
+    </div>
+    <script src="script.js?v=20260219-final-FIXED"></script>
 </body>
 
 
