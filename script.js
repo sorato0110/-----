@@ -406,6 +406,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 fabContainer.style.bottom = savedPos.bottom;
                 fabContainer.style.left = 'auto'; // ensure fixed right/bottom
                 fabContainer.style.top = 'auto';
+
+                if (savedPos.right === '0px' || parseInt(savedPos.right) === 0) {
+                    fabContainer.classList.add('sticky-right');
+                }
             }
 
             // Click Handler (Prevent if dragged)
@@ -473,9 +477,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         let newRight = initialRight + deltaX;
                         let newBottom = initialBottom + deltaY;
 
-                        // Clamp
-                        // Safety margins (approx 10px from edge)
-                        newRight = Math.max(16, Math.min(newRight, window.innerWidth - 80));
+                        // Sticky Right / Snap Logic
+                        if (newRight < 40) {
+                            newRight = 0;
+                            if (!fabContainer.classList.contains('sticky-right')) {
+                                fabContainer.classList.add('sticky-right');
+                            }
+                        } else {
+                            if (fabContainer.classList.contains('sticky-right')) {
+                                fabContainer.classList.remove('sticky-right');
+                            }
+                            // Clamp normal margins
+                            newRight = Math.max(16, Math.min(newRight, window.innerWidth - 80));
+                        }
+
+                        // Clamp Bottom
                         newBottom = Math.max(16, Math.min(newBottom, window.innerHeight - 80));
 
                         fabContainer.style.right = `${newRight}px`;
