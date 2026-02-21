@@ -157,6 +157,30 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Sidebar: Self-Analysis Cockpit -->
+                    <div class="dashboard-sidebar">
+                        <div class="card sidebar-card">
+                            <h3 class="sidebar-title">Inner Compass <button id="edit-analysis-btn"
+                                    class="icon-btn-small"><i class="fa-solid fa-pen"></i></button></h3>
+
+
+                            <div class="chart-mini-container">
+                                <div class="chart-toggle-group">
+                                    <button id="toggle-chart-needs" class="toggle-btn active">Needs</button>
+                                    <button id="toggle-chart-reflection" class="toggle-btn">Reflections</button>
+                                </div>
+                                <canvas id="needsRadarChart"></canvas>
+                                <canvas id="reflectionRadarChart" class="hidden"></canvas>
+                            </div>
+
+                            <div class="sidebar-section mt-4">
+                                <h4 class="text-xs font-bold mb-2">My Core Values</h4>
+                                <div id="values-cloud" class="tags-container">
+                                    <span class="tag-placeholder">価値観を入力するとここに表示されます</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
     </div>
@@ -184,30 +208,6 @@
                         <!-- Cards injected here -->
                     </div>
                 </section>
-            </div>
-        </div>
-    </div>
-    <!-- Sidebar: Self-Analysis Cockpit -->
-    <div class="dashboard-sidebar">
-        <div class="card sidebar-card">
-            <h3 class="sidebar-title">Inner Compass <button id="edit-analysis-btn" class="icon-btn-small"><i
-                        class="fa-solid fa-pen"></i></button></h3>
-
-
-            <div class="chart-mini-container">
-                <div class="chart-toggle-group">
-                    <button id="toggle-chart-needs" class="toggle-btn active">Needs</button>
-                    <button id="toggle-chart-reflection" class="toggle-btn">Reflections</button>
-                </div>
-                <canvas id="needsRadarChart"></canvas>
-                <canvas id="reflectionRadarChart" class="hidden"></canvas>
-            </div>
-
-            <div class="sidebar-section mt-4">
-                <h4 class="text-xs font-bold mb-2">My Core Values</h4>
-                <div id="values-cloud" class="tags-container">
-                    <span class="tag-placeholder">価値観を入力するとここに表示されます</span>
-                </div>
             </div>
         </div>
     </div>

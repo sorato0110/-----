@@ -2469,12 +2469,29 @@ document.addEventListener('DOMContentLoaded', () => {
             div.className = 'hypothesis-card';
             div.style.borderLeft = '4px solid #3b82f6';
 
+            // Prepare Reflection Tooltip HTML
+            let reflectionHtml = '';
+            if (log.reflection && (log.reflection.growth.text || log.reflection.autonomy.text || log.reflection.connection.text)) {
+                let tooltipContent = '';
+                if (log.reflection.growth.text) tooltipContent += `<strong>成長:</strong> ${log.reflection.growth.text}<br>`;
+                if (log.reflection.autonomy.text) tooltipContent += `<strong>自律:</strong> ${log.reflection.autonomy.text}<br>`;
+                if (log.reflection.connection.text) tooltipContent += `<strong>関係:</strong> ${log.reflection.connection.text}`;
+
+                reflectionHtml = `
+                    <div class="reflection-tooltip-container">
+                        <i class="fa-regular fa-comment-dots text-primary"></i>
+                        <span class="reflection-tooltip-text">${tooltipContent}</span>
+                    </div>
+                `;
+            }
+
             div.innerHTML = `
             <div class="hypo-grid" style="grid-template-columns: 1fr auto;">
                 <div>
-                     <div class="hypo-utils" style="margin-bottom:8px; font-size:0.8rem; color:var(--text-muted);">
+                     <div class="hypo-utils" style="margin-bottom:8px; font-size:0.8rem; color:var(--text-muted); display:flex; gap:8px; align-items:center;">
                         <span style="background:#e0f2fe; color:#0284c7; padding:2px 8px; border-radius:4px;">${log.idea}</span>
                         <span><i class="fa-regular fa-calendar"></i> ${log.start || '--'} ~ ${log.end || '--'}</span>
+                        ${reflectionHtml}
                     </div>
                     <div class="hypo-title">${log.test}</div>
                     <div class="metrics-grid" style="margin-top:12px; gap:8px;">

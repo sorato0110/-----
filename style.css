@@ -1289,6 +1289,60 @@ body {
     font-size: 0.9rem;
 }
 
+/* Reflection Tooltip Styles */
+.reflection-tooltip-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.reflection-tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    width: max-content;
+    max-width: 250px;
+    background-color: #334155;
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 8px 12px;
+    position: absolute;
+    z-index: 100;
+    bottom: 125%;
+    /* Position above the icon */
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    pointer-events: none;
+    /* Prevent tooltip from blocking hovers */
+}
+
+/* Tooltip Arrow */
+.reflection-tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    /* At the bottom of the tooltip */
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #334155 transparent transparent transparent;
+}
+
+.reflection-tooltip-container:hover .reflection-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+
 @media (max-width: 768px) {
     .metrics-grid {
         grid-template-columns: 1fr;
