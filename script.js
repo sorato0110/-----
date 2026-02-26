@@ -2863,7 +2863,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderHypotheses();
                 renderLogs();
                 renderAnalysisView();
-                renderMetricsConfig();
+                renderMetricInputs();
             }
         };
 
