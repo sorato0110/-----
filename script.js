@@ -303,8 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Show Reflection Modal
-
-                // Show Reflection Modal
                 if (reflectionModal) {
                     // Reset Reflection Form
                     if (refGrowthScore) refGrowthScore.value = 5;
@@ -2803,10 +2801,108 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // --- Expose functions out of DOMContentLoaded so Firebase script can invoke them ---
+        // Global hook
+        window.app = {
+            syncFromCloud: async (userId) => {
+                if (window.firebaseAPI && window.firebaseAPI.loadFromCloud) {
+                    const data = await window.firebaseAPI.loadFromCloud(userId);
+                    if (data) {
+                        if (data.bayesTasks) tasks = data.bayesTasks;
+                        if (data.bayesHypotheses) hypotheses = data.bayesHypotheses;
+                        if (data.bayesLogs) experimentLogs = data.bayesLogs;
+                        if (data.bayesDailyLogs) dailyLogs = data.bayesDailyLogs;
+                        if (data.bayesSelfAnalysis) selfAnalysis = data.bayesSelfAnalysis;
+                        if (data.bayesMetricConfig) metricConfig = data.bayesMetricConfig;
+
+                        // Force save purely to localstorage so it sticks locally
+                        localStorage.setItem('bayesTasks', JSON.stringify(tasks));
+                        localStorage.setItem('bayesHypotheses', JSON.stringify(hypotheses));
+                        localStorage.setItem('bayesLogs', JSON.stringify(experimentLogs));
+                        localStorage.setItem('bayesDailyLogs', JSON.stringify(dailyLogs));
+                        localStorage.setItem('bayesSelfAnalysis', JSON.stringify(selfAnalysis));
+                        localStorage.setItem('bayesMetricConfig', JSON.stringify(metricConfig));
+
+                        console.log("Data synced and loaded into states from Cloud");
+                        window.app.renderAll();
+                    } else {
+                        // Cloud has no data. Check if there is significant local data to migrate.
+                        if (tasks.length > 0 || hypotheses.length > 0) {
+                            if (confirm("クラウド上にデータがありません。現在この端末にあるデータをクラウドに引き継ぎますか？\n（[OK]を押すと自動でアップロードされます）")) {
+                                const payload = {
+                                    bayesTasks: tasks,
+                                    bayesHypotheses: hypotheses,
+                                    bayesLogs: experimentLogs,
+                                    bayesDailyLogs: dailyLogs,
+                                    bayesSelfAnalysis: selfAnalysis,
+                                    bayesMetricConfig: metricConfig
+                                };
+                                window.firebaseAPI.saveToCloud(userId, payload);
+                                alert("データをクラウドに移行しました！以降はどの端末からでも同じデータを確認できます。");
+                            }
+                        }
+                    }
+                }
+            },
+            loadData: () => {
+                tasks = JSON.parse(localStorage.getItem('bayesTasks')) || [];
+                hypotheses = JSON.parse(localStorage.getItem('bayesHypotheses')) || [];
+                experimentLogs = JSON.parse(localStorage.getItem('bayesLogs')) || [];
+                dailyLogs = JSON.parse(localStorage.getItem('bayesDailyLogs')) || [];
+                selfAnalysis = JSON.parse(localStorage.getItem('bayesSelfAnalysis')) || {
+                    needs: [],
+                    profile: { strength: '', values: [], uniqueness: '' }
+                };
+                metricConfig = JSON.parse(localStorage.getItem('bayesMetricConfig')) || [
+                    { id: 'm1', label: 'Reach' }, { id: 'm2', label: 'Reaction' }, { id: 'm3', label: 'Result' },
+                    { id: 'm4', label: 'Lead' }, { id: 'm5', label: 'Conversion' }
+                ];
+            },
+            renderAll: () => {
+                render();
+                renderHypotheses();
+                renderLogs();
+                renderAnalysisView();
+                renderMetricsConfig();
+            }
+        };
+
+        // Wrap original save functions to also trigger Firebase save if logged in
+        const autoSyncToCloud = () => {
+            if (window.firebaseAPI && window.firebaseAPI.currentUser && !window.firebaseAPI.isConfigTBD) {
+                const payload = {
+                    bayesTasks: tasks,
+                    bayesHypotheses: hypotheses,
+                    bayesLogs: experimentLogs,
+                    bayesDailyLogs: dailyLogs,
+                    bayesSelfAnalysis: selfAnalysis,
+                    bayesMetricConfig: metricConfig
+                };
+                window.firebaseAPI.saveToCloud(window.firebaseAPI.currentUser.uid, payload);
+            }
+        };
+
+        const originalSaveTasks = saveTasks;
+        saveTasks = () => { originalSaveTasks(); autoSyncToCloud(); };
+
+        const originalSaveHypotheses = saveHypotheses;
+        saveHypotheses = () => { originalSaveHypotheses(); autoSyncToCloud(); };
+
+        const originalSaveLogs = saveLogs;
+        saveLogs = () => { originalSaveLogs(); autoSyncToCloud(); };
+
+        const originalSaveDailyLogs = saveDailyLogs;
+        saveDailyLogs = () => { originalSaveDailyLogs(); autoSyncToCloud(); };
+
+        const originalSaveSelfAnalysis = saveSelfAnalysis;
+        saveSelfAnalysis = () => { originalSaveSelfAnalysis(); autoSyncToCloud(); };
+
+        const originalSaveMetricConfig = saveMetricConfig;
+        saveMetricConfig = () => { originalSaveMetricConfig(); autoSyncToCloud(); };
+
+
         // Initial Render call
-        render();
-        renderAnalysisView();
-        renderSuggestedValues();
+        window.app.renderAll();
 
 
         // Chart Toggle Listeners
@@ -2888,6 +2984,18 @@ document.addEventListener('DOMContentLoaded', () => {
             container.addEventListener('pointermove', onMove);
             container.addEventListener('pointerup', onUp);
         };
+
+        // Bind Firebase buttons after page loads if script loaded sync
+        if (window.firebaseAPI && window.firebaseAPI.bindAuthUI) {
+            window.firebaseAPI.bindAuthUI();
+        } else {
+            // Wait for module
+            setTimeout(() => {
+                if (window.firebaseAPI && window.firebaseAPI.bindAuthUI) {
+                    window.firebaseAPI.bindAuthUI();
+                }
+            }, 500);
+        }
 
     } catch (e) {
         console.error('CRITICAL ERROR in DOMContentLoaded:', e);

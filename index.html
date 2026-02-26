@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="style.css?v=20260212">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase SDK Setup -->
+    <script type="module" src="firebase-init.js"></script>
 </head>
 
 <body>
@@ -21,6 +24,10 @@
             <div class="header-content">
                 <h1>バンディット×ベイズ戦略</h1>
                 <div class="header-actions">
+                    <div id="auth-container" class="auth-container">
+                        <span id="user-name-display" class="user-name hidden"></span>
+                        <button id="auth-btn" class="primary-btn compact-btn">ログイン</button>
+                    </div>
                     <button class="icon-btn" title="Export"><i class="fa-solid fa-download"></i></button>
                     <button class="icon-btn" title="Import"><i class="fa-solid fa-upload"></i></button>
                     <button class="icon-btn" title="Reset"><i class="fa-solid fa-rotate-right"></i></button>
