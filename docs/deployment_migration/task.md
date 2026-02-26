@@ -6,4 +6,5 @@
   - [x] Vercelを使用することに決定
 - [x] デプロイ方法の構築
   - [x] GitHub連携による自動デプロイ手順を準備
-- [ ] 新環境へのデプロイ実行と動作確認
+- [x] 新環境へのデプロイ実行と動作確認
+  - [x] Vercelへのデプロイ成功と本番URL（https://haze-strategy-web.vercel.app）の動作確認
