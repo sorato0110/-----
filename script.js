@@ -2985,6 +2985,105 @@ document.addEventListener('DOMContentLoaded', () => {
             container.addEventListener('pointerup', onUp);
         };
 
+        // --- Export / Import / Reset Header Buttons ---
+        const exportBtn = document.querySelector('.icon-btn[title="Export"]');
+        const importBtn = document.querySelector('.icon-btn[title="Import"]');
+        const resetBtn2 = document.querySelector('.icon-btn[title="Reset"]');
+
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                const payload = {
+                    bayesTasks: tasks,
+                    bayesHypotheses: hypotheses,
+                    bayesLogs: experimentLogs,
+                    bayesDailyLogs: dailyLogs,
+                    bayesSelfAnalysis: selfAnalysis,
+                    bayesMetricConfig: metricConfig
+                };
+                const json = JSON.stringify(payload, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const date = new Date().toISOString().slice(0, 10);
+                a.href = url;
+                a.download = `bandit-bayes-backup-${date}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        if (importBtn) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'application/json,.json';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+
+            importBtn.addEventListener('click', () => {
+                fileInput.value = '';
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        if (data.bayesTasks) tasks = data.bayesTasks;
+                        if (data.bayesHypotheses) hypotheses = data.bayesHypotheses;
+                        if (data.bayesLogs) experimentLogs = data.bayesLogs;
+                        if (data.bayesDailyLogs) dailyLogs = data.bayesDailyLogs;
+                        if (data.bayesSelfAnalysis) selfAnalysis = data.bayesSelfAnalysis;
+                        if (data.bayesMetricConfig) metricConfig = data.bayesMetricConfig;
+
+                        saveTasks();
+                        saveHypotheses();
+                        saveLogs();
+                        saveDailyLogs();
+                        saveSelfAnalysis();
+                        saveMetricConfig();
+
+                        window.app.renderAll();
+                        alert('データをインポートしました！');
+                    } catch (err) {
+                        alert('インポートに失敗しました。JSONファイルを確認してください。');
+                        console.error('Import error:', err);
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        if (resetBtn2) {
+            resetBtn2.addEventListener('click', () => {
+                if (!confirm('すべてのデータを初期化しますか？\nこの操作は取り消せません。')) return;
+                tasks = [];
+                hypotheses = [];
+                experimentLogs = [];
+                dailyLogs = [];
+                selfAnalysis = { needs: [], profile: { strength: '', values: [], uniqueness: '' } };
+                metricConfig = [
+                    { id: 'm1', label: 'Reach' },
+                    { id: 'm2', label: 'Reaction' },
+                    { id: 'm3', label: 'Result' },
+                    { id: 'm4', label: 'Lead' },
+                    { id: 'm5', label: 'Conversion' }
+                ];
+
+                saveTasks();
+                saveHypotheses();
+                saveLogs();
+                saveDailyLogs();
+                saveSelfAnalysis();
+                saveMetricConfig();
+
+                window.app.renderAll();
+                alert('データを初期化しました。');
+            });
+        }
+
         // Bind Firebase buttons after page loads if script loaded sync
         if (window.firebaseAPI && window.firebaseAPI.bindAuthUI) {
             window.firebaseAPI.bindAuthUI();
